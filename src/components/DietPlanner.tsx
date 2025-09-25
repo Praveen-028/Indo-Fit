@@ -23,6 +23,7 @@ export const DietPlanner: React.FC = () => {
       const plans = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
+        days: doc.data().days || [],
         createdAt: doc.data().createdAt?.toDate(),
         updatedAt: doc.data().updatedAt?.toDate(),
       })) as DietPlan[];
