@@ -24,11 +24,11 @@ export const DietPlanner: React.FC = () => {
         id: doc.id,
         ...doc.data(),
         days: doc.data().days || [],
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
+        createdAt: doc.data().createdAt?.toDate() || undefined,
+        updatedAt: doc.data().updatedAt?.toDate() || undefined,
       })) as DietPlan[];
       
-      setDietPlans(plans.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
+      setDietPlans(plans.sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)));
     });
 
     return () => unsubscribe();
@@ -158,7 +158,7 @@ export const DietPlanner: React.FC = () => {
                   <h3 className="text-xl font-semibold text-ivory-100">{plan.traineeName}</h3>
                   <p className="text-green-200 text-sm mt-1">
                     {plan.days.length} day{plan.days.length !== 1 ? 's' : ''} • 
-                    Updated {plan.updatedAt.toLocaleDateString()}
+                    Updated {plan.updatedAt?.toLocaleDateString() || 'N/A'}
                   </p>
                 </div>
                 

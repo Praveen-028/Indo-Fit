@@ -62,8 +62,8 @@ export interface DietPlan {
   traineeId: string;
   traineeName: string;
   days: DietDay[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface AttendanceRecord {
