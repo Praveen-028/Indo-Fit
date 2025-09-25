@@ -64,7 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children }) => 
       </nav>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
         {children}
       </main>
     </div>

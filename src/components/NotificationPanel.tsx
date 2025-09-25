@@ -13,7 +13,7 @@ export const NotificationPanel: React.FC = () => {
           <Bell className="w-5 h-5 text-yellow-400" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-ivory-100">Notifications</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-ivory-100">Notifications</h1>
           <p className="text-green-200 mt-1">Membership expiry alerts</p>
         </div>
       </div>
@@ -31,9 +31,9 @@ export const NotificationPanel: React.FC = () => {
           <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
               <AlertTriangle className="w-5 h-5 text-yellow-400" />
-              <h3 className="text-lg font-semibold text-ivory-100">Expiring Memberships</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-ivory-100">Expiring Memberships</h3>
             </div>
-            <p className="text-yellow-200 text-sm">
+            <p className="text-yellow-200 text-xs sm:text-sm">
               {expiringMemberships.length} membership(s) expiring within the next 4 days
             </p>
           </div>
@@ -42,15 +42,15 @@ export const NotificationPanel: React.FC = () => {
             {expiringMemberships.map((membership) => (
               <div
                 key={membership.traineeId}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6 hover:bg-white/15 transition-all"
+                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 sm:p-6 hover:bg-white/15 transition-all"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h4 className="text-lg font-semibold text-ivory-100 mb-2">
+                    <h4 className="text-base sm:text-lg font-semibold text-ivory-100 mb-2">
                       {membership.traineeName}
                     </h4>
                     
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-2 text-xs sm:text-sm">
                       <div className="flex items-center space-x-2 text-green-200">
                         <Calendar className="w-4 h-4" />
                         <span>Expires: {format(membership.expiryDate, 'PPP')}</span>
@@ -72,7 +72,7 @@ export const NotificationPanel: React.FC = () => {
                   
                   <button
                     onClick={() => sendWhatsAppMessage(membership)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                    className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm sm:text-base"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>WhatsApp</span>

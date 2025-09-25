@@ -100,7 +100,7 @@ export const WorkoutPlanner: React.FC = () => {
             <Dumbbell className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-ivory-100">Workout Plans</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-ivory-100">Workout Plans</h1>
             <p className="text-green-200 mt-1">Design and manage workout routines</p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export const WorkoutPlanner: React.FC = () => {
             setEditingPlan(null);
             setShowForm(true);
           }}
-          className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-lg"
+          className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-lg text-sm sm:text-base"
         >
           <Plus className="w-5 h-5" />
           <span>Create Plan</span>
@@ -123,7 +123,7 @@ export const WorkoutPlanner: React.FC = () => {
         <select
           value={selectedTraineeId}
           onChange={(e) => setSelectedTraineeId(e.target.value)}
-          className="px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400"
+          className="px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 text-sm sm:text-base"
         >
           <option value="all">All Trainees</option>
           {trainees.map((trainee) => (
@@ -144,23 +144,23 @@ export const WorkoutPlanner: React.FC = () => {
           <p className="text-green-200 mb-6">Create your first workout plan to get started.</p>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {filteredPlans.map((plan) => (
             <div
               key={plan.id}
-              className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300"
+              className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-ivory-100">{plan.traineeName}</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold text-ivory-100">{plan.traineeName}</h3>
                   <p className="text-green-200 text-sm mt-1">
                     {plan.days.length} day{plan.days.length !== 1 ? 's' : ''} • 
                     Updated {plan.updatedAt.toLocaleDateString()}
                   </p>
                 </div>
                 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   <button
                     onClick={() => handleEdit(plan)}
                     className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -197,14 +197,14 @@ export const WorkoutPlanner: React.FC = () => {
                 {plan.days.slice(0, 3).map((day, index) => (
                   <div key={day.id} className="bg-black/20 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-ivory-100">{day.name}</h4>
+                      <h4 className="font-medium text-ivory-100 text-sm sm:text-base">{day.name}</h4>
                       <span className="text-xs text-green-300">
                         {day.exercises.length} exercise{day.exercises.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                     
                     {day.exercises.slice(0, 2).map((exercise, idx) => (
-                      <div key={exercise.id} className="text-sm text-green-200 ml-2">
+                      <div key={exercise.id} className="text-xs sm:text-sm text-green-200 ml-2">
                         • {exercise.name} - {exercise.sets} sets × {exercise.reps} reps
                       </div>
                     ))}
@@ -219,7 +219,7 @@ export const WorkoutPlanner: React.FC = () => {
                 
                 {plan.days.length > 3 && (
                   <div className="text-center py-2">
-                    <span className="text-sm text-yellow-400">+{plan.days.length - 3} more days</span>
+                    <span className="text-xs sm:text-sm text-yellow-400">+{plan.days.length - 3} more days</span>
                   </div>
                 )}
               </div>

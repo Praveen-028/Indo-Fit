@@ -119,20 +119,20 @@ export const AttendanceManager: React.FC = () => {
             <Calendar className="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-ivory-100">Attendance</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-ivory-100">Attendance</h1>
             <p className="text-green-200 mt-1">Track daily attendance</p>
           </div>
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <button
             onClick={() => setView('daily')}
             className={`px-4 py-2 rounded-lg transition-all ${
               view === 'daily'
                 ? 'bg-yellow-500 text-white'
                 : 'bg-white/10 text-ivory-200 hover:bg-white/20'
-            }`}
+            } text-sm sm:text-base`}
           >
             Daily
           </button>
@@ -142,7 +142,7 @@ export const AttendanceManager: React.FC = () => {
               view === 'weekly'
                 ? 'bg-yellow-500 text-white'
                 : 'bg-white/10 text-ivory-200 hover:bg-white/20'
-            }`}
+            } text-sm sm:text-base`}
           >
             Weekly
           </button>
@@ -150,7 +150,7 @@ export const AttendanceManager: React.FC = () => {
       </div>
 
       {/* Date Navigation */}
-      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6">
+      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigateDate('prev')}
@@ -160,7 +160,7 @@ export const AttendanceManager: React.FC = () => {
           </button>
           
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-ivory-100">
+            <h2 className="text-lg sm:text-xl font-semibold text-ivory-100">
               {view === 'daily' 
                 ? format(selectedDate, 'EEEE, MMMM d, yyyy')
                 : `Week of ${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
@@ -168,7 +168,7 @@ export const AttendanceManager: React.FC = () => {
             </h2>
             
             {view === 'weekly' && weekStats && (
-              <div className="flex items-center justify-center space-x-6 mt-2 text-sm">
+              <div className="flex items-center justify-center space-x-3 sm:space-x-6 mt-2 text-xs sm:text-sm">
                 <span className="text-green-400">Present: {weekStats.totalPresent}</span>
                 <span className="text-red-400">Absent: {weekStats.totalAbsent}</span>
                 <span className="text-yellow-400">Total: {weekStats.totalRecords}</span>
@@ -200,19 +200,19 @@ export const AttendanceManager: React.FC = () => {
               return (
                 <div
                   key={trainee.id}
-                  className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6 hover:bg-white/15 transition-all"
+                  className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 sm:p-6 hover:bg-white/15 transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-ivory-100">{trainee.name}</h3>
+                      <h3 className="text-base sm:text-lg font-semibold text-ivory-100">{trainee.name}</h3>
                       <p className="text-green-200 text-sm">{trainee.phoneNumber}</p>
                     </div>
                     
-                    <div className="flex items-center space-x-3">
+                    <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
                       <button
                         onClick={() => markAttendance(trainee.id, trainee.name, true)}
                         disabled={loading}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                        className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm ${
                           attendanceStatus === true
                             ? 'bg-green-600 text-white'
                             : 'bg-white/10 text-ivory-200 hover:bg-green-600/20 hover:text-green-300'
@@ -225,7 +225,7 @@ export const AttendanceManager: React.FC = () => {
                       <button
                         onClick={() => markAttendance(trainee.id, trainee.name, false)}
                         disabled={loading}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                        className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm ${
                           attendanceStatus === false
                             ? 'bg-red-600 text-white'
                             : 'bg-white/10 text-ivory-200 hover:bg-red-600/20 hover:text-red-300'
@@ -243,14 +243,14 @@ export const AttendanceManager: React.FC = () => {
         </div>
       ) : (
         // Weekly View - Show attendance grid
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6">
-          <div className="grid grid-cols-8 gap-4">
+        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 sm:p-6 overflow-x-auto">
+          <div className="grid grid-cols-8 gap-2 sm:gap-4 min-w-[600px]">
             {/* Header row */}
-            <div className="font-semibold text-ivory-100">Trainee</div>
+            <div className="font-semibold text-ivory-100 text-sm sm:text-base">Trainee</div>
             {Array.from({ length: 7 }, (_, i) => {
               const date = addDays(startOfWeek(selectedDate, { weekStartsOn: 1 }), i);
               return (
-                <div key={i} className="text-center font-medium text-green-200 text-sm">
+                <div key={i} className="text-center font-medium text-green-200 text-xs sm:text-sm">
                   {format(date, 'EEE')}<br />
                   <span className="text-xs">{format(date, 'M/d')}</span>
                 </div>
@@ -260,7 +260,7 @@ export const AttendanceManager: React.FC = () => {
             {/* Trainee rows */}
             {trainees.map((trainee) => (
               <React.Fragment key={trainee.id}>
-                <div className="text-ivory-100 font-medium truncate">{trainee.name}</div>
+                <div className="text-ivory-100 font-medium truncate text-sm sm:text-base">{trainee.name}</div>
                 {Array.from({ length: 7 }, (_, i) => {
                   const date = addDays(startOfWeek(selectedDate, { weekStartsOn: 1 }), i);
                   const dateStr = format(date, 'yyyy-MM-dd');
@@ -272,13 +272,13 @@ export const AttendanceManager: React.FC = () => {
                   return (
                     <div key={i} className="text-center">
                       {record ? (
-                        <span className={`inline-flex w-6 h-6 rounded-full items-center justify-center text-xs ${
+                        <span className={`inline-flex w-5 h-5 sm:w-6 sm:h-6 rounded-full items-center justify-center text-xs ${
                           record.present ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                         }`}>
                           {record.present ? '✓' : '✗'}
                         </span>
                       ) : (
-                        <span className="inline-flex w-6 h-6 rounded-full bg-gray-400 items-center justify-center text-xs text-white">
+                        <span className="inline-flex w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-400 items-center justify-center text-xs text-white">
                           -
                         </span>
                       )}

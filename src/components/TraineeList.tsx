@@ -61,13 +61,13 @@ export const TraineeList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-ivory-100">Trainees</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-ivory-100">Trainees</h1>
           <p className="text-green-200 mt-1">{trainees.length} active members</p>
         </div>
         
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-lg"
+          className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-lg text-sm sm:text-base"
         >
           <Plus className="w-5 h-5" />
           <span>Add Trainee</span>
@@ -82,7 +82,7 @@ export const TraineeList: React.FC = () => {
           placeholder="Search trainees..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all"
+          className="w-full pl-10 pr-4 py-2 sm:py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all text-sm sm:text-base"
         />
       </div>
 
@@ -98,19 +98,19 @@ export const TraineeList: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredTrainees.map((trainee) => {
             const expiryStatus = getExpiryStatus(new Date(trainee.membershipEndDate));
             
             return (
               <div
                 key={trainee.id}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300 group"
+                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group"
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-ivory-100 group-hover:text-yellow-400 transition-colors">
+                    <h3 className="text-base sm:text-lg font-semibold text-ivory-100 group-hover:text-yellow-400 transition-colors">
                       {trainee.name}
                     </h3>
                     <div className="flex items-center space-x-2 text-sm text-green-200 mt-1">
@@ -131,14 +131,14 @@ export const TraineeList: React.FC = () => {
                       <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[160px]">
                         <button
                           onClick={() => handleArchive(trainee.id)}
-                          className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
                         >
                           <Archive className="w-4 h-4" />
                           <span>Archive</span>
                         </button>
                         <button
                           onClick={() => handleDelete(trainee.id)}
-                          className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="w-4 h-4" />
                           <span>Delete</span>
@@ -157,24 +157,24 @@ export const TraineeList: React.FC = () => {
 
                 {/* Details */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-green-200">Duration:</span>
                     <span className="text-ivory-100 font-medium">{trainee.membershipDuration} months</span>
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-green-200">Goal:</span>
                     <span className="text-ivory-100 font-medium">{trainee.goalCategory}</span>
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-green-200">Special Training:</span>
                     <span className={`font-medium ${trainee.specialTraining ? 'text-yellow-400' : 'text-ivory-100'}`}>
                       {trainee.specialTraining ? 'Yes' : 'No'}
                     </span>
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-green-200">Expires:</span>
                     <span className="text-ivory-100 font-medium">
                       {new Date(trainee.membershipEndDate).toLocaleDateString()}

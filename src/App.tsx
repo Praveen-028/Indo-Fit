@@ -32,7 +32,7 @@ function App() {
         return <NotificationPanel />;
       case 'attendance':
         return <AttendanceManager />;
-      case 'workouts':
+      case 'workout':
         return <WorkoutPlanner />;
       case 'diet':
         return <DietPlanner />;
