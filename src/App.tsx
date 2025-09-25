@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from './components/Layout';
+import Layout from './components/Layout';
 import { TraineeList } from './components/TraineeList';
 import { NotificationPanel } from './components/NotificationPanel';
 import { AttendanceManager } from './components/AttendanceManager';
