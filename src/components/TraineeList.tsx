@@ -15,7 +15,6 @@ import {
 
 import { useTrainees } from '../hooks/useTrainees';
 import { TraineeForm } from './TraineeForm';
-import { generateInvoicePDF } from '../utils/pdfGenerator';
 import { formatDistanceToNow } from 'date-fns';
 
 export const TraineeList: React.FC = () => {
@@ -51,11 +50,43 @@ export const TraineeList: React.FC = () => {
 
   const handleGenerateInvoice = async (trainee: any) => {
     try {
-      // Generate the PDF invoice
-      const invoiceNo = await generateInvoicePDF(trainee);
+      // Generate invoice number
+      const invoiceNo = `INV-${trainee.uniqueId}-${Date.now().toString().slice(-6)}`;
       
-      // Prepare WhatsApp message
-      const message = `Hi ${trainee.name}! 📋\n\nYour INDOFIT GYM invoice has been generated.\n\nInvoice No: ${invoiceNo}\nAmount: ₹${trainee.admissionFee}\nMembership Duration: ${trainee.membershipDuration} month(s)\n\nThank you for choosing INDOFIT GYM! 💪\n\nPhysique LAB7.0`;
+      // Create comprehensive WhatsApp invoice message
+      const message = `🧾 *INVOICE - INDOFIT GYM*
+*Physique LAB7.0*
+
+━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 *Invoice Details:*
+• Invoice No: ${invoiceNo}
+• Date: ${new Date().toLocaleDateString()}
+
+👤 *Member Information:*
+• Name: ${trainee.name}
+• Member ID: ${trainee.uniqueId}
+• Phone: ${trainee.phoneNumber}
+
+💪 *Membership Details:*
+• Admission Date: ${trainee.membershipStartDate.toLocaleDateString()}
+• Duration: ${trainee.membershipDuration} month(s)
+• Expires: ${trainee.membershipEndDate.toLocaleDateString()}
+• Goal: ${trainee.goalCategory}
+• Special Training: ${trainee.specialTraining ? 'Yes' : 'No'}
+• Payment Type: ${trainee.paymentType}
+
+💰 *Amount Details:*
+• Total Amount: *₹${trainee.admissionFee}*
+
+━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ *Payment Status: PAID*
+
+Thank you for choosing INDOFIT GYM! 🙏
+Keep pushing your limits! 💪
+
+*Contact us:* [Your gym contact details]`;
       
       // Create WhatsApp URL with the message
       const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
@@ -68,7 +99,7 @@ export const TraineeList: React.FC = () => {
       setActiveDropdown(null);
       
       // Show success message
-      alert(`Invoice generated successfully! WhatsApp will open to send the invoice details to ${trainee.name}.`);
+      alert(`Invoice details ready! WhatsApp will open to send complete invoice information to ${trainee.name}.`);
       
     } catch (error) {
       console.error('Error generating invoice:', error);
