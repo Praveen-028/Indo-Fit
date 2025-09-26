@@ -75,7 +75,7 @@ export const TraineeList: React.FC = () => {
       const encodedData = btoa(JSON.stringify(invoiceData));
       
       // Create invoice link - this should point to your hosted invoice page
-      const invoiceLink = `https://your-gym-website.com/invoice.html?data=${encodedData}`;
+      const invoiceLink = `https://bolt.new/~/sb1-l1ptnjhy/invoice.html?data=${encodedData}`;
       // OR if you use path-based routing: `https://your-gym-website.com/invoice/${encodedData}`;
       
       // Create WhatsApp message with the invoice link
