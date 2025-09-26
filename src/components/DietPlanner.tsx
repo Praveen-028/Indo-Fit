@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChefHat, Plus, CreditCard as Edit, Trash2, Share, FileDown } from 'lucide-react';
+import { ChefHat, Plus, CreditCard as Edit, Trash2, Share, FileDown, Search } from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
 import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -13,9 +13,10 @@ export const DietPlanner: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<DietPlan | null>(null);
   const [selectedTraineeId, setSelectedTraineeId] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>(''); // ✅ separate search input
 
   useEffect(() => {
-    const q = selectedTraineeId === 'all' 
+    const q = selectedTraineeId === 'all'
       ? collection(db, 'dietPlans')
       : query(collection(db, 'dietPlans'), where('traineeId', '==', selectedTraineeId));
 
@@ -27,7 +28,7 @@ export const DietPlanner: React.FC = () => {
         createdAt: doc.data().createdAt?.toDate() || undefined,
         updatedAt: doc.data().updatedAt?.toDate() || undefined,
       })) as DietPlan[];
-      
+
       setDietPlans(plans.sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)));
     });
 
@@ -51,32 +52,35 @@ export const DietPlanner: React.FC = () => {
 
   const handleShare = (plan: DietPlan) => {
     const trainee = trainees.find(t => t.id === plan.traineeId);
-    if (!trainee) return;
+    if (!trainee) {
+      alert("Trainee not found for this plan");
+      return;
+    }
 
     let message = `🥗 *Diet Plan for ${plan.traineeName}*\n\n`;
-    
+
     plan.days.forEach((day) => {
       message += `*${day.dayName}*\n`;
-      
+
       day.meals.forEach((meal) => {
         message += `\n🍽️ *${meal.type}*: ${meal.name}\n`;
-        
+
         meal.foodItems.forEach((item) => {
           message += `• ${item.name}`;
           if (item.quantity) message += ` (${item.quantity})`;
           message += '\n';
         });
-        
+
         if (meal.notes) {
           message += `Notes: ${meal.notes}\n`;
         }
       });
-      
+
       message += '\n---\n\n';
     });
-    
+
     message += 'Follow your diet plan consistently for best results! 🌟';
-    
+
     const url = `https://wa.me/${trainee.phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -89,8 +93,25 @@ export const DietPlanner: React.FC = () => {
     }
   };
 
-  const filteredPlans = selectedTraineeId === 'all' 
-    ? dietPlans 
+  // ✅ Trainee search logic
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(e.target.value);
+
+    if (term === '') {
+      setSelectedTraineeId('all');
+    } else {
+      const foundTrainee = trainees.find(t =>
+        t.name.toLowerCase().includes(term) ||
+        t.phoneNumber.includes(term) ||
+        (t.uniqueId && t.uniqueId.toLowerCase().includes(term))
+      );
+      setSelectedTraineeId(foundTrainee ? foundTrainee.id : 'all');
+    }
+  };
+
+  const filteredPlans = selectedTraineeId === 'all'
+    ? dietPlans
     : dietPlans.filter(plan => plan.traineeId === selectedTraineeId);
 
   return (
@@ -106,7 +127,7 @@ export const DietPlanner: React.FC = () => {
             <p className="text-green-200 mt-1">Create and manage nutrition plans</p>
           </div>
         </div>
-        
+
         <button
           onClick={() => {
             setEditingPlan(null);
@@ -125,20 +146,8 @@ export const DietPlanner: React.FC = () => {
         <input
           type="text"
           placeholder="Search trainees..."
-          value={selectedTraineeId}
-          onChange={(e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            if (searchTerm === '') {
-              setSelectedTraineeId('all');
-            } else {
-              const foundTrainee = trainees.find(t => 
-                t.name.toLowerCase().includes(searchTerm) ||
-                t.phoneNumber.includes(searchTerm) ||
-                (t.uniqueId && t.uniqueId.toLowerCase().includes(searchTerm))
-              );
-              setSelectedTraineeId(foundTrainee ? foundTrainee.id : 'all');
-            }
-          }}
+          value={searchTerm} // ✅ separate from traineeId
+          onChange={handleSearchChange}
           className="w-full pl-10 pr-4 py-2 sm:py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all text-sm sm:text-base"
         />
       </div>
@@ -164,11 +173,11 @@ export const DietPlanner: React.FC = () => {
                 <div>
                   <h3 className="text-lg sm:text-xl font-semibold text-ivory-100">{plan.traineeName}</h3>
                   <p className="text-green-200 text-sm mt-1">
-                    {plan.days.length} day{plan.days.length !== 1 ? 's' : ''} • 
+                    {plan.days.length} day{plan.days.length !== 1 ? 's' : ''} •
                     Updated {plan.updatedAt?.toLocaleDateString() || 'N/A'}
                   </p>
                 </div>
-                
+
                 <div className="flex items-center space-x-1 sm:space-x-2">
                   <button
                     onClick={() => handleEdit(plan)}
@@ -211,7 +220,7 @@ export const DietPlanner: React.FC = () => {
                         {day.meals.length} meal{day.meals.length !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {day.meals.map((meal) => (
                         <div key={meal.id} className="text-xs bg-green-800/30 text-green-200 px-2 py-1 rounded">
@@ -221,7 +230,7 @@ export const DietPlanner: React.FC = () => {
                     </div>
                   </div>
                 ))}
-                
+
                 {plan.days.length > 3 && (
                   <div className="text-center py-2">
                     <span className="text-xs sm:text-sm text-yellow-400">+{plan.days.length - 3} more days</span>
