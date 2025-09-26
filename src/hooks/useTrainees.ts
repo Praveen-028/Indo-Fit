@@ -8,7 +8,7 @@ export const useTrainees = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'trainees'), where('isActive', '==', true));
+    const q = collection(db, 'trainees'); // Get all trainees (active and archived)
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const traineesData = snapshot.docs.map(doc => ({
         id: doc.id,

@@ -5,6 +5,7 @@ import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, deleteDoc
 import { db } from '../lib/firebase';
 import { AttendanceRecord } from '../types';
 import { format, startOfDay, endOfDay, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { isToday, isPastDate, isFutureDate } from '../utils/traineeUtils';
 
 export const AttendanceManager: React.FC = () => {
   const { trainees } = useTrainees();
@@ -43,6 +44,12 @@ export const AttendanceManager: React.FC = () => {
   }, [selectedDate, view]);
 
   const markAttendance = async (traineeId: string, traineeName: string, present: boolean) => {
+    // Only allow marking attendance for today
+    if (!isToday(selectedDate)) {
+      alert('Attendance can only be marked for today.');
+      return;
+    }
+    
     setLoading(true);
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -91,6 +98,8 @@ export const AttendanceManager: React.FC = () => {
       setSelectedDate(direction === 'prev' ? subDays(selectedDate, 7) : addDays(selectedDate, 7));
     }
   };
+
+  const canMarkAttendance = isToday(selectedDate);
 
   const getWeekStats = () => {
     if (view !== 'weekly') return null;
@@ -167,6 +176,12 @@ export const AttendanceManager: React.FC = () => {
               }
             </h2>
             
+            {view === 'daily' && !canMarkAttendance && (
+              <p className="text-yellow-400 text-sm mt-1">
+                {isPastDate(selectedDate) ? 'Past attendance (view only)' : 'Future date (view only)'}
+              </p>
+            )}
+            
             {view === 'weekly' && weekStats && (
               <div className="flex items-center justify-center space-x-3 sm:space-x-6 mt-2 text-xs sm:text-sm">
                 <span className="text-green-400">Present: {weekStats.totalPresent}</span>
@@ -211,12 +226,14 @@ export const AttendanceManager: React.FC = () => {
                     <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
                       <button
                         onClick={() => markAttendance(trainee.id, trainee.name, true)}
-                        disabled={loading}
+                        disabled={loading || !canMarkAttendance}
                         className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm ${
                           attendanceStatus === true
                             ? 'bg-green-600 text-white'
-                            : 'bg-white/10 text-ivory-200 hover:bg-green-600/20 hover:text-green-300'
-                        }`}
+                            : canMarkAttendance 
+                              ? 'bg-white/10 text-ivory-200 hover:bg-green-600/20 hover:text-green-300'
+                              : 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                        } ${!canMarkAttendance ? 'opacity-50' : ''}`}
                       >
                         <Check className="w-4 h-4" />
                         <span>Present</span>
@@ -224,12 +241,14 @@ export const AttendanceManager: React.FC = () => {
                       
                       <button
                         onClick={() => markAttendance(trainee.id, trainee.name, false)}
-                        disabled={loading}
+                        disabled={loading || !canMarkAttendance}
                         className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm ${
                           attendanceStatus === false
                             ? 'bg-red-600 text-white'
-                            : 'bg-white/10 text-ivory-200 hover:bg-red-600/20 hover:text-red-300'
-                        }`}
+                            : canMarkAttendance
+                              ? 'bg-white/10 text-ivory-200 hover:bg-red-600/20 hover:text-red-300'
+                              : 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                        } ${!canMarkAttendance ? 'opacity-50' : ''}`}
                       >
                         <X className="w-4 h-4" />
                         <span>Absent</span>

@@ -120,20 +120,27 @@ export const DietPlanner: React.FC = () => {
       </div>
 
       {/* Filter */}
-      <div className="flex items-center space-x-4">
-        <label className="text-sm font-medium text-ivory-200">Filter by trainee:</label>
-        <select
+      <div className="relative">
+        <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search trainees..."
           value={selectedTraineeId}
-          onChange={(e) => setSelectedTraineeId(e.target.value)}
-          className="px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 text-sm sm:text-base"
-        >
-          <option value="all">All Trainees</option>
-          {trainees.map((trainee) => (
-            <option key={trainee.id} value={trainee.id} className="bg-gray-800">
-              {trainee.name}
-            </option>
-          ))}
-        </select>
+          onChange={(e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            if (searchTerm === '') {
+              setSelectedTraineeId('all');
+            } else {
+              const foundTrainee = trainees.find(t => 
+                t.name.toLowerCase().includes(searchTerm) ||
+                t.phoneNumber.includes(searchTerm) ||
+                (t.uniqueId && t.uniqueId.toLowerCase().includes(searchTerm))
+              );
+              setSelectedTraineeId(foundTrainee ? foundTrainee.id : 'all');
+            }
+          }}
+          className="w-full pl-10 pr-4 py-2 sm:py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all text-sm sm:text-base"
+        />
       </div>
 
       {/* Plans Grid */}
