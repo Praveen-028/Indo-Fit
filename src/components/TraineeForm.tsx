@@ -21,10 +21,10 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { addTrainee, trainees } = useTrainees(); // Make sure useTrainees returns the list of existing trainees
+  const { addTrainee, trainees } = useTrainees();
 
   const validatePhoneNumber = (phone: string) => {
-    // Basic Indian mobile number validation
+    // Indian mobile number validation
     const regex = /^[6-9]\d{9}$/;
     return regex.test(phone);
   };
@@ -36,7 +36,6 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
       return;
     }
 
-    // Check if phone number already exists
     const exists = trainees.some(t => t.phoneNumber === formData.phoneNumber);
     if (exists) {
       setError('Phone number already exists');
@@ -50,7 +49,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
       endDate.setMonth(endDate.getMonth() + formData.membershipDuration);
 
       const trainee: Omit<Trainee, 'id'> = {
-        uniqueId: formData.phoneNumber, // Use phone as unique ID
+        uniqueId: formData.phoneNumber,
         name: formData.name,
         phoneNumber: formData.phoneNumber,
         membershipDuration: formData.membershipDuration,
@@ -76,8 +75,8 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
         goalCategory: 'Weight Loss',
         paymentType: 'Cash',
       });
-    } catch (error) {
-      console.error('Error adding trainee:', error);
+    } catch (err) {
+      console.error(err);
       setError('Error adding trainee');
     } finally {
       setLoading(false);
@@ -121,6 +120,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
 
         <div className="p-4 sm:p-6 max-h-[60vh] overflow-y-auto">
           {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
+
           {step === 1 ? (
             <div className="space-y-4">
               <div>
@@ -146,9 +146,75 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
               </div>
             </div>
           ) : (
-            // Membership details (unchanged)
             <div className="space-y-4">
-              {/* ... same as your existing step 2 content ... */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Membership Duration</label>
+                <select
+                  value={formData.membershipDuration}
+                  onChange={(e) => setFormData({ ...formData, membershipDuration: Number(e.target.value) })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                >
+                  <option value={1}>1 Month</option>
+                  <option value={3}>3 Months</option>
+                  <option value={6}>6 Months</option>
+                  <option value={12}>12 Months</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Goal Category</label>
+                <select
+                  value={formData.goalCategory}
+                  onChange={(e) => setFormData({ ...formData, goalCategory: e.target.value as any })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                >
+                  <option value="Weight Loss">Weight Loss</option>
+                  <option value="Weight Gain">Weight Gain</option>
+                  <option value="Strength">Strength</option>
+                  <option value="Conditioning">Conditioning</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Admission Fee (₹)</label>
+                <input
+                  type="number"
+                  value={formData.admissionFee}
+                  onChange={(e) => setFormData({ ...formData, admissionFee: Number(e.target.value) })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                  placeholder="Enter admission fee"
+                  min="0"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+                <select
+                  value={formData.paymentType}
+                  onChange={(e) => setFormData({ ...formData, paymentType: e.target.value as any })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="Online">Online</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Special Training</span>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, specialTraining: !formData.specialTraining })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    formData.specialTraining ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.specialTraining ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           )}
 
@@ -163,11 +229,11 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
                 <span>Back</span>
               </button>
             )}
-            
+
             {step === 1 ? (
               <button
                 onClick={() => setStep(2)}
-                disabled={!formData.name || !formData.phoneNumber}
+                disabled={!formData.name || !formData.phoneNumber || !validatePhoneNumber(formData.phoneNumber)}
                 className="ml-auto flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm sm:text-base"
               >
                 <span>Next</span>
