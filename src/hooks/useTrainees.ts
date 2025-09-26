@@ -167,7 +167,7 @@ export const useTrainees = () => {
     archivedTrainees,          // Archived list for archived view
     loading,
     addTrainee,
-    updateTrainee,
+    updateTrainee,            // Make sure this is exported
     archiveTrainee,
     unarchiveTrainee,          // Exposed unarchive function
     deleteTrainee,
