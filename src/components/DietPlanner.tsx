@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChefHat, Plus, Edit, Trash2, Share, FileDown } from 'lucide-react';
+import { ChefHat, Plus, CreditCard as Edit, Trash2, Share, FileDown } from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
 import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';

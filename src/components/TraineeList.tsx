@@ -1,42 +1,18 @@
 import React, { useState } from 'react';
-import { Plus, Search, Phone, Calendar, Target, Archive, Trash2, Edit, MoreVertical, FileText, RotateCcw } from 'lucide-react';
-import { useTrainees } from '../hooks/useTrainees';
+import { Plus, Search, Phone, Calendar, Target, Archive, Trash2, CreditCard as Edit, MoreVertical, FileText, RotateCcw } from 'lucide-react's } from '../hooks/useTrainees';
 import { TraineeForm } from './TraineeForm';
 import { formatDistanceToNow } from 'date-fns';
-import { generateInvoicePDF } from '../utils/pdfGenerator';
 
 export const TraineeList: React.FC = () => {
-  const { trainees, loading, archiveTrainee, deleteTrainee, updateTrainee } = useTrainees();
+  const { trainees, loading, archiveTrainee, deleteTrainee } = useTrainees();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [showArchived, setShowArchived] = useState(false);
 
-  const displayedTrainees = trainees.filter(trainee => trainee.isActive === !showArchived);
-  
-  const filteredTrainees = displayedTrainees.filter(trainee =>
+  const filteredTrainees = trainees.filter(trainee =>
     trainee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trainee.phoneNumber.includes(searchTerm) ||
-    (trainee.uniqueId && trainee.uniqueId.toLowerCase().includes(searchTerm.toLowerCase()))
+    trainee.phoneNumber.includes(searchTerm)
   );
-
-  const handleUnarchive = async (traineeId: string) => {
-    try {
-      await updateTrainee(traineeId, { isActive: true });
-      setActiveDropdown(null);
-    } catch (error) {
-      console.error('Error unarchiving trainee:', error);
-    }
-  };
-
-  const handleGenerateInvoice = async (trainee: any) => {
-    try {
-      await generateInvoicePDF(trainee);
-      setActiveDropdown(null);
-    } catch (error) {
-      console.error('Error generating invoice:', error);
-    }
-  };
 
   const handleArchive = async (traineeId: string) => {
     try {
@@ -85,30 +61,16 @@ export const TraineeList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-ivory-100">Trainees</h1>
-          <p className="text-green-200 mt-1">
-            {showArchived ? `${trainees.filter(t => !t.isActive).length} archived` : `${trainees.filter(t => t.isActive).length} active`} members
-          </p>
+          <p className="text-green-200 mt-1">{trainees.length} active members</p>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowArchived(!showArchived)}
-            className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-ivory-200 rounded-lg hover:bg-white/20 transition-all text-sm"
-          >
-            <Archive className="w-4 h-4" />
-            <span>{showArchived ? 'Show Active' : 'Show Archived'}</span>
-          </button>
-          
-          {!showArchived && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-lg text-sm sm:text-base"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Trainee</span>
-            </button>
-          )}
-        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-lg text-sm sm:text-base"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Add Trainee</span>
+        </button>
       </div>
 
       {/* Search */}
@@ -116,7 +78,7 @@ export const TraineeList: React.FC = () => {
         <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search by name, phone, or ID..."
+          placeholder="Search trainees..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 sm:py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all text-sm sm:text-base"
@@ -150,9 +112,6 @@ export const TraineeList: React.FC = () => {
                     <h3 className="text-base sm:text-lg font-semibold text-ivory-100 group-hover:text-yellow-400 transition-colors">
                       {trainee.name}
                     </h3>
-                    <div className="flex items-center space-x-2 text-xs text-green-300 mt-1">
-                      <span>ID: {trainee.uniqueId || 'N/A'}</span>
-                    </div>
                     <div className="flex items-center space-x-2 text-sm text-green-200 mt-1">
                       <Phone className="w-4 h-4" />
                       <span>{trainee.phoneNumber}</span>
@@ -169,32 +128,13 @@ export const TraineeList: React.FC = () => {
                     
                     {activeDropdown === trainee.id && (
                       <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[160px]">
-                        {!showArchived ? (
-                          <>
-                            <button
-                              onClick={() => handleGenerateInvoice(trainee)}
-                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              <FileText className="w-4 h-4" />
-                              <span>Invoice</span>
-                            </button>
-                            <button
-                              onClick={() => handleArchive(trainee.id)}
-                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              <Archive className="w-4 h-4" />
-                              <span>Archive</span>
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => handleUnarchive(trainee.id)}
-                            className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-green-600 hover:bg-green-50"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                            <span>Unarchive</span>
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleArchive(trainee.id)}
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <Archive className="w-4 h-4" />
+                          <span>Archive</span>
+                        </button>
                         <button
                           onClick={() => handleDelete(trainee.id)}
                           className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50"
@@ -219,11 +159,6 @@ export const TraineeList: React.FC = () => {
                   <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-green-200">Duration:</span>
                     <span className="text-ivory-100 font-medium">{trainee.membershipDuration} months</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="text-green-200">Fee:</span>
-                    <span className="text-ivory-100 font-medium">₹{trainee.admissionFee || 0}</span>
                   </div>
                   
                   <div className="flex items-center justify-between text-xs sm:text-sm">

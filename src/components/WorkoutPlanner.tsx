@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dumbbell, Plus, Users, Edit, Trash2, Share, FileDown } from 'lucide-react';
+import { Dumbbell, Plus, Users, CreditCard as Edit, Trash2, Share, FileDown } from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
