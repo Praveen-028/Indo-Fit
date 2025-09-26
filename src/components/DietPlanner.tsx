@@ -13,7 +13,7 @@ export const DietPlanner: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<DietPlan | null>(null);
   const [selectedTraineeId, setSelectedTraineeId] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState<string>(''); // ✅ separate search input
+  const [searchTerm, setSearchTerm] = useState<string>(''); // Separate search state
 
   useEffect(() => {
     const q = selectedTraineeId === 'all'
@@ -93,26 +93,56 @@ export const DietPlanner: React.FC = () => {
     }
   };
 
-  // ✅ Trainee search logic
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(e.target.value);
-
-    if (term === '') {
-      setSelectedTraineeId('all');
-    } else {
-      const foundTrainee = trainees.find(t =>
-        t.name.toLowerCase().includes(term) ||
-        t.phoneNumber.includes(term) ||
-        (t.uniqueId && t.uniqueId.toLowerCase().includes(term))
-      );
-      setSelectedTraineeId(foundTrainee ? foundTrainee.id : 'all');
+  // Enhanced filtering logic with debugging
+  const filteredPlans = dietPlans.filter((plan) => {
+    // If no search term, show all plans
+    if (searchTerm.trim() === '') {
+      return true;
     }
-  };
+    
+    const searchLower = searchTerm.toLowerCase().trim();
+    
+    // Search in trainee name (most important)
+    const traineeNameMatch = plan.traineeName && 
+      plan.traineeName.toLowerCase().includes(searchLower);
+    
+    // Search in day names
+    const dayNameMatch = plan.days && plan.days.some(day => 
+      day.dayName && day.dayName.toLowerCase().includes(searchLower)
+    );
+    
+    // Search in meal names and types
+    const mealMatch = plan.days && plan.days.some(day => 
+      day.meals && day.meals.some(meal => 
+        (meal.name && meal.name.toLowerCase().includes(searchLower)) ||
+        (meal.type && meal.type.toLowerCase().includes(searchLower))
+      )
+    );
+    
+    // Search in food items
+    const foodItemMatch = plan.days && plan.days.some(day => 
+      day.meals && day.meals.some(meal => 
+        meal.foodItems && meal.foodItems.some(item => 
+          item.name && item.name.toLowerCase().includes(searchLower)
+        )
+      )
+    );
+    
+    return traineeNameMatch || dayNameMatch || mealMatch || foodItemMatch;
+  });
 
-  const filteredPlans = selectedTraineeId === 'all'
-    ? dietPlans
-    : dietPlans.filter(plan => plan.traineeId === selectedTraineeId);
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // Reset trainee selection to show all when searching
+    setSelectedTraineeId('all');
+    
+    // Debug logging - remove this after testing
+    console.log('Search term:', value);
+    console.log('All diet plans:', dietPlans.map(p => ({ id: p.id, traineeName: p.traineeName })));
+    console.log('All trainees:', trainees.map(t => ({ id: t.id, name: t.name })));
+  };
 
   return (
     <div className="space-y-6">
@@ -140,13 +170,13 @@ export const DietPlanner: React.FC = () => {
         </button>
       </div>
 
-      {/* Filter */}
+      {/* Search Filter */}
       <div className="relative">
         <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search trainees..."
-          value={searchTerm} // ✅ separate from traineeId
+          placeholder="Search by trainee name, meals, or food items..."
+          value={searchTerm}
           onChange={handleSearchChange}
           className="w-full pl-10 pr-4 py-2 sm:py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all text-sm sm:text-base"
         />
@@ -158,8 +188,31 @@ export const DietPlanner: React.FC = () => {
           <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <ChefHat className="w-8 h-8 text-orange-400" />
           </div>
-          <h3 className="text-xl font-semibold text-ivory-100 mb-2">No diet plans found</h3>
-          <p className="text-green-200 mb-6">Create your first diet plan to get started.</p>
+          <h3 className="text-xl font-semibold text-ivory-100 mb-2">
+            {searchTerm ? `No results found for "${searchTerm}"` : 'No diet plans found'}
+          </h3>
+          <p className="text-green-200 mb-6">
+            {searchTerm 
+              ? 'Try checking the spelling or create a new plan for this trainee.' 
+              : 'Create your first diet plan to get started.'
+            }
+          </p>
+          {searchTerm && (
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedTraineeId('all');
+                }}
+                className="px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors mr-3"
+              >
+                Clear Search
+              </button>
+              <div className="text-sm text-gray-400 mt-3">
+                Debug info: Found {dietPlans.length} total plans, searching for "{searchTerm}"
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
