@@ -15,6 +15,7 @@ import {
 
 import { useTrainees } from '../hooks/useTrainees';
 import { TraineeForm } from './TraineeForm';
+import { generateInvoicePDF } from '../utils/pdfGenerator';
 import { formatDistanceToNow } from 'date-fns';
 
 export const TraineeList: React.FC = () => {
@@ -45,6 +46,33 @@ export const TraineeList: React.FC = () => {
       } catch (error) {
         console.error('Error deleting trainee:', error);
       }
+    }
+  };
+
+  const handleGenerateInvoice = async (trainee: any) => {
+    try {
+      // Generate the PDF invoice
+      const invoiceNo = await generateInvoicePDF(trainee);
+      
+      // Prepare WhatsApp message
+      const message = `Hi ${trainee.name}! 📋\n\nYour INDOFIT GYM invoice has been generated.\n\nInvoice No: ${invoiceNo}\nAmount: ₹${trainee.admissionFee}\nMembership Duration: ${trainee.membershipDuration} month(s)\n\nThank you for choosing INDOFIT GYM! 💪\n\nPhysique LAB7.0`;
+      
+      // Create WhatsApp URL with the message
+      const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
+      const whatsappNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
+      const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      
+      // Open WhatsApp in a new tab
+      window.open(whatsappURL, '_blank');
+      
+      setActiveDropdown(null);
+      
+      // Show success message
+      alert(`Invoice generated successfully! WhatsApp will open to send the invoice details to ${trainee.name}.`);
+      
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      alert('Error generating invoice. Please try again.');
     }
   };
 
@@ -142,6 +170,13 @@ export const TraineeList: React.FC = () => {
                     
                     {activeDropdown === trainee.id && (
                       <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[160px]">
+                        <button
+                          onClick={() => handleGenerateInvoice(trainee)}
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>Invoice</span>
+                        </button>
                         <button
                           onClick={() => handleArchive(trainee.id)}
                           className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
