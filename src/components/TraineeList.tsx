@@ -53,40 +53,50 @@ export const TraineeList: React.FC = () => {
       // Generate invoice number
       const invoiceNo = `INV-${trainee.uniqueId}-${Date.now().toString().slice(-6)}`;
       
-      // Create comprehensive WhatsApp invoice message
-      const message = `🧾 *INVOICE - INDOFIT GYM*
-*Physique LAB7.0*
+      // Create invoice data object
+      const invoiceData = {
+        invoiceNo,
+        date: new Date().toISOString(),
+        trainee: {
+          name: trainee.name,
+          uniqueId: trainee.uniqueId,
+          phoneNumber: trainee.phoneNumber,
+          membershipStartDate: trainee.membershipStartDate,
+          membershipEndDate: trainee.membershipEndDate,
+          membershipDuration: trainee.membershipDuration,
+          goalCategory: trainee.goalCategory,
+          specialTraining: trainee.specialTraining,
+          paymentType: trainee.paymentType,
+          admissionFee: trainee.admissionFee
+        }
+      };
+      
+      // Encode invoice data for URL
+      const encodedData = btoa(JSON.stringify(invoiceData));
+      
+      // Create invoice link - this should point to your hosted invoice page
+      const invoiceLink = `https://your-gym-website.com/invoice.html?data=${encodedData}`;
+      // OR if you use path-based routing: `https://your-gym-website.com/invoice/${encodedData}`;
+      
+      // Create WhatsApp message with the invoice link
+      const message = `🧾 *INDOFIT GYM INVOICE*
 
-━━━━━━━━━━━━━━━━━━━━━━━
+Hi ${trainee.name}! 👋
 
-📋 *Invoice Details:*
+Your membership invoice is ready! 📋
+
+📄 *Invoice Details:*
 • Invoice No: ${invoiceNo}
-• Date: ${new Date().toLocaleDateString()}
-
-👤 *Member Information:*
-• Name: ${trainee.name}
-• Member ID: ${trainee.uniqueId}
-• Phone: ${trainee.phoneNumber}
-
-💪 *Membership Details:*
-• Admission Date: ${trainee.membershipStartDate.toLocaleDateString()}
+• Amount: ₹${trainee.admissionFee}
 • Duration: ${trainee.membershipDuration} month(s)
-• Expires: ${trainee.membershipEndDate.toLocaleDateString()}
-• Goal: ${trainee.goalCategory}
-• Special Training: ${trainee.specialTraining ? 'Yes' : 'No'}
-• Payment Type: ${trainee.paymentType}
 
-💰 *Amount Details:*
-• Total Amount: *₹${trainee.admissionFee}*
+🔗 *View Your Invoice:*
+${invoiceLink}
 
-━━━━━━━━━━━━━━━━━━━━━━━
+Click the link above to view and download your complete invoice.
 
-✅ *Payment Status: PAID*
-
-Thank you for choosing INDOFIT GYM! 🙏
-Keep pushing your limits! 💪
-
-*Contact us:* [Your gym contact details]`;
+Thank you for choosing INDOFIT GYM! 💪
+*Physique LAB7.0*`;
       
       // Create WhatsApp URL with the message
       const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
@@ -99,7 +109,7 @@ Keep pushing your limits! 💪
       setActiveDropdown(null);
       
       // Show success message
-      alert(`Invoice details ready! WhatsApp will open to send complete invoice information to ${trainee.name}.`);
+      alert(`Invoice link generated! WhatsApp will open to send the invoice link to ${trainee.name}.`);
       
     } catch (error) {
       console.error('Error generating invoice:', error);
