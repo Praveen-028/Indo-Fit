@@ -7,12 +7,13 @@ import {
   Trash2, 
   MoreVertical, 
   FileText, 
-  RotateCcw // Used for Unarchive
+  RotateCcw, // Used for Unarchive
+  Edit // NEW: Added Edit icon
 } from 'lucide-react';
 
 import { useTrainees } from '../hooks/useTrainees';
 import { TraineeForm } from './TraineeForm';
-// Assuming Trainee is imported implicitly or globally, or adjust the type definition below
+import { Trainee } from '../types'; // NEW: Import Trainee type
 
 // Type for view mode
 type TraineeView = 'active' | 'archived';
@@ -31,6 +32,7 @@ export const TraineeList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<TraineeView>('active'); // State for view mode
+  const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null); // NEW: State for editing trainee
 
   // Determine which list to filter based on the current view
   const listToFilter = currentView === 'active' ? trainees : archivedTrainees;
@@ -71,6 +73,19 @@ export const TraineeList: React.FC = () => {
         console.error('Error deleting trainee:', error);
       }
     }
+  };
+
+  // NEW: Handler for Edit
+  const handleEdit = (trainee: Trainee) => {
+    setEditingTrainee(trainee);
+    setShowForm(true);
+    setActiveDropdown(null);
+  };
+
+  // NEW: Handler for closing form (resets editing state)
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingTrainee(null);
   };
 
   const handleGenerateInvoice = async (trainee: any) => {
@@ -275,6 +290,15 @@ Keep pushing your limits! 💪
                     {activeDropdown === trainee.id && (
                       <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[160px]">
                         
+                        {/* NEW: Edit Button */}
+                        <button
+                          onClick={() => handleEdit(trainee)}
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span>Edit</span>
+                        </button>
+                        
                         {/* Invoice */}
                         <button
                           onClick={() => handleGenerateInvoice(trainee)}
@@ -362,7 +386,12 @@ Keep pushing your limits! 💪
         </div>
       )}
 
-      <TraineeForm isOpen={showForm} onClose={() => setShowForm(false)} />
+      {/* UPDATED: Pass editingTrainee to TraineeForm */}
+      <TraineeForm 
+        isOpen={showForm} 
+        onClose={handleCloseForm}
+        editingTrainee={editingTrainee} 
+      />
     </div>
   );
 };
