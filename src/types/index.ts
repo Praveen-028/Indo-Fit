@@ -1,10 +1,12 @@
 export interface Trainee {
   id: string;
+  uniqueId: string; // Generated from mobile number
   name: string;
   phoneNumber: string;
   membershipDuration: number;
   membershipStartDate: Date;
   membershipEndDate: Date;
+  admissionFee: number;
   specialTraining: boolean;
   goalCategory: 'Weight Loss' | 'Weight Gain' | 'Strength' | 'Conditioning';
   paymentType: 'Online' | 'Cash';

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, ArrowRight, ArrowLeft, UserPlus } from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
 import { Trainee } from '../types';
+import { generateUniqueId } from '../utils/traineeUtils';
 
 interface TraineeFormProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
     name: '',
     phoneNumber: '',
     membershipDuration: 1,
+    admissionFee: 0,
     specialTraining: false,
     goalCategory: 'Weight Loss' as const,
     paymentType: 'Cash' as const,
@@ -29,11 +31,13 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
       endDate.setMonth(endDate.getMonth() + formData.membershipDuration);
 
       const trainee: Omit<Trainee, 'id'> = {
+        uniqueId: generateUniqueId(formData.phoneNumber),
         name: formData.name,
         phoneNumber: formData.phoneNumber,
         membershipDuration: formData.membershipDuration,
         membershipStartDate: startDate,
         membershipEndDate: endDate,
+        admissionFee: formData.admissionFee,
         specialTraining: formData.specialTraining,
         goalCategory: formData.goalCategory,
         paymentType: formData.paymentType,
@@ -48,6 +52,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
         name: '',
         phoneNumber: '',
         membershipDuration: 1,
+        admissionFee: 0,
         specialTraining: false,
         goalCategory: 'Weight Loss',
         paymentType: 'Cash',
@@ -147,6 +152,18 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
                   <option value="Strength">Strength</option>
                   <option value="Conditioning">Conditioning</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Admission Fee (₹)</label>
+                <input
+                  type="number"
+                  value={formData.admissionFee}
+                  onChange={(e) => setFormData({ ...formData, admissionFee: Number(e.target.value) })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                  placeholder="Enter admission fee"
+                  min="0"
+                />
               </div>
 
               <div>
