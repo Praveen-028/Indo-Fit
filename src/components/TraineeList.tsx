@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
-import { Plus, Search, Phone, Calendar, Target, Archive, Trash2, CreditCard as Edit,MoreVertical,FileText, RotateCcw } from 'lucide-react';
-import {useTrainees}from '../hooks/useTrainees';
+import { 
+  Plus, 
+  Search, 
+  Phone, 
+  Calendar, 
+  Target, 
+  Archive, 
+  Trash2, 
+  CreditCard as Edit, 
+  MoreVertical, 
+  FileText, 
+  RotateCcw 
+} from 'lucide-react';
+
+import { useTrainees } from '../hooks/useTrainees';
 import { TraineeForm } from './TraineeForm';
 import { formatDistanceToNow } from 'date-fns';
 
 export const TraineeList: React.FC = () => {
-  const { trainees, loading, archiveTrainee, deleteTrainee } = useTrainees();
+  const { trainees = [], loading, archiveTrainee, deleteTrainee } = useTrainees();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
