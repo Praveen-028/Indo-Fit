@@ -22,6 +22,7 @@ export const WorkoutPlanner: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<WorkoutPlan | null>(null);
   const [selectedTraineeId, setSelectedTraineeId] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>(''); // Separate search state
 
   useEffect(() => {
     const q =
@@ -104,10 +105,55 @@ export const WorkoutPlanner: React.FC = () => {
     }
   };
 
-  const filteredPlans =
-    selectedTraineeId === 'all'
-      ? workoutPlans
-      : workoutPlans.filter((plan) => plan.traineeId === selectedTraineeId);
+  // Updated filtering logic
+  const filteredPlans = workoutPlans.filter((plan) => {
+    // First apply trainee selection filter
+    if (selectedTraineeId !== 'all' && plan.traineeId !== selectedTraineeId) {
+      return false;
+    }
+    
+    // Then apply search term filter
+    if (searchTerm.trim() === '') {
+      return true;
+    }
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      plan.traineeName.toLowerCase().includes(searchLower) ||
+      plan.days.some(day => 
+        day.name.toLowerCase().includes(searchLower) ||
+        day.exercises.some(exercise => 
+          exercise.name.toLowerCase().includes(searchLower)
+        )
+      )
+    );
+  });
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // If search is cleared, reset to show all
+    if (value.trim() === '') {
+      setSelectedTraineeId('all');
+      return;
+    }
+    
+    // Try to find matching trainee and auto-select
+    const searchLower = value.toLowerCase();
+    const foundTrainee = trainees.find(
+      (t) =>
+        t.name.toLowerCase().includes(searchLower) ||
+        t.phoneNumber.includes(value) ||
+        (t.uniqueId && t.uniqueId.toLowerCase().includes(searchLower))
+    );
+    
+    if (foundTrainee) {
+      setSelectedTraineeId(foundTrainee.id);
+    } else {
+      setSelectedTraineeId('all');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -135,27 +181,14 @@ export const WorkoutPlanner: React.FC = () => {
         </button>
       </div>
 
-      {/* Filter */}
+      {/* Search Filter */}
       <div className="relative">
         <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search trainees..."
-          value={selectedTraineeId}
-          onChange={(e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            if (searchTerm === '') {
-              setSelectedTraineeId('all');
-            } else {
-              const foundTrainee = trainees.find(
-                (t) =>
-                  t.name.toLowerCase().includes(searchTerm) ||
-                  t.phoneNumber.includes(searchTerm) ||
-                  (t.uniqueId && t.uniqueId.toLowerCase().includes(searchTerm))
-              );
-              setSelectedTraineeId(foundTrainee ? foundTrainee.id : 'all');
-            }
-          }}
+          placeholder="Search by trainee name, exercise, or day..."
+          value={searchTerm}
+          onChange={handleSearchChange}
           className="w-full pl-10 pr-4 py-2 sm:py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all text-sm sm:text-base"
         />
       </div>
@@ -166,8 +199,26 @@ export const WorkoutPlanner: React.FC = () => {
           <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Dumbbell className="w-8 h-8 text-purple-400" />
           </div>
-          <h3 className="text-xl font-semibold text-ivory-100 mb-2">No workout plans found</h3>
-          <p className="text-green-200 mb-6">Create your first workout plan to get started.</p>
+          <h3 className="text-xl font-semibold text-ivory-100 mb-2">
+            {searchTerm ? 'No matching workout plans found' : 'No workout plans found'}
+          </h3>
+          <p className="text-green-200 mb-6">
+            {searchTerm 
+              ? 'Try adjusting your search terms or create a new plan.' 
+              : 'Create your first workout plan to get started.'
+            }
+          </p>
+          {searchTerm && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedTraineeId('all');
+              }}
+              className="px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors"
+            >
+              Clear Search
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
