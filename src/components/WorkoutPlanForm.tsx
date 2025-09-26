@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Save } from 'lucide-react';
+import { X, Plus, Trash2, Save, Search, ChevronDown } from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
-import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, query, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { WorkoutPlan, WorkoutDay, Exercise } from '../types';
 
@@ -18,6 +18,39 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
   const [numberOfDays, setNumberOfDays] = useState(3);
   const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Search and filtering states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [existingWorkoutPlanTraineeIds, setExistingWorkoutPlanTraineeIds] = useState<string[]>([]);
+  const [loadingTrainees, setLoadingTrainees] = useState(false);
+
+  // Fetch existing workout plan trainee IDs
+  useEffect(() => {
+    const fetchExistingWorkoutPlans = async () => {
+      if (!isOpen) return;
+      
+      setLoadingTrainees(true);
+      try {
+        const workoutPlansQuery = query(collection(db, 'workoutPlans'));
+        const snapshot = await getDocs(workoutPlansQuery);
+        const traineeIds = snapshot.docs.map(doc => doc.data().traineeId);
+        
+        // If editing, don't exclude the current plan's trainee
+        const filteredIds = editingPlan 
+          ? traineeIds.filter(id => id !== editingPlan.traineeId)
+          : traineeIds;
+          
+        setExistingWorkoutPlanTraineeIds(filteredIds);
+      } catch (error) {
+        console.error('Error fetching existing workout plans:', error);
+      } finally {
+        setLoadingTrainees(false);
+      }
+    };
+
+    fetchExistingWorkoutPlans();
+  }, [isOpen, editingPlan]);
 
   // Initialize form data when editing
   useEffect(() => {
@@ -26,14 +59,64 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
       setNumberOfDays(editingPlan.days.length);
       setWorkoutDays(editingPlan.days);
       setStep(3); // Go directly to exercise editing
+      
+      // Set search term to selected trainee name
+      const trainee = trainees.find(t => t.id === editingPlan.traineeId);
+      if (trainee) {
+        setSearchTerm(trainee.name);
+      }
     } else {
       // Reset form
       setSelectedTraineeId('');
       setNumberOfDays(3);
       setWorkoutDays([]);
       setStep(1);
+      setSearchTerm('');
     }
-  }, [editingPlan]);
+  }, [editingPlan, trainees]);
+
+  // Filter available trainees
+  const availableTrainees = trainees.filter(trainee => {
+    // Don't show trainees who already have workout plans (unless editing current plan)
+    const hasExistingPlan = existingWorkoutPlanTraineeIds.includes(trainee.id);
+    const isCurrentlyEditing = editingPlan && trainee.id === editingPlan.traineeId;
+    
+    if (hasExistingPlan && !isCurrentlyEditing) {
+      return false;
+    }
+
+    // Filter by search term
+    if (searchTerm.trim() === '') {
+      return true;
+    }
+
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      trainee.name.toLowerCase().includes(searchLower) ||
+      trainee.phoneNumber.includes(searchTerm) ||
+      (trainee.uniqueId && trainee.uniqueId.toLowerCase().includes(searchLower))
+    );
+  });
+
+  const handleTraineeSelect = (trainee: any) => {
+    setSelectedTraineeId(trainee.id);
+    setSearchTerm(trainee.name);
+    setShowDropdown(false);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setShowDropdown(true);
+    
+    // Clear selection if search term doesn't match selected trainee
+    if (selectedTraineeId) {
+      const selectedTrainee = trainees.find(t => t.id === selectedTraineeId);
+      if (selectedTrainee && !selectedTrainee.name.toLowerCase().includes(value.toLowerCase())) {
+        setSelectedTraineeId('');
+      }
+    }
+  };
 
   // Generate workout days when number changes
   const generateWorkoutDays = () => {
@@ -160,23 +243,92 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
           {step === 1 && (
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Select Trainee</h3>
-              <select
-                value={selectedTraineeId}
-                onChange={(e) => setSelectedTraineeId(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-0"
-              >
-                <option value="">Choose a trainee...</option>
-                {trainees.map((trainee) => (
-                  <option key={trainee.id} value={trainee.id}>
-                    {trainee.name}
-                  </option>
-                ))}
-              </select>
+              
+              {loadingTrainees ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading trainees...</p>
+                </div>
+              ) : (
+                <div className="relative">
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      onFocus={() => setShowDropdown(true)}
+                      className="w-full pl-10 pr-10 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-0"
+                      placeholder="Search for a trainee by name, phone, or ID..."
+                    />
+                    <ChevronDown 
+                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`}
+                    />
+                  </div>
+
+                  {/* Dropdown */}
+                  {showDropdown && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-10 mt-1">
+                      {availableTrainees.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          {searchTerm 
+                            ? `No trainees found matching "${searchTerm}"`
+                            : 'All trainees already have workout plans'
+                          }
+                        </div>
+                      ) : (
+                        availableTrainees.map((trainee) => (
+                          <button
+                            key={trainee.id}
+                            onClick={() => handleTraineeSelect(trainee)}
+                            className="w-full text-left px-4 py-3 hover:bg-purple-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                          >
+                            <div className="font-medium text-gray-900">{trainee.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {trainee.phoneNumber} {trainee.uniqueId && `• ID: ${trainee.uniqueId}`}
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* Selected trainee info */}
+                  {selectedTraineeId && (
+                    <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-purple-900">Selected Trainee</h4>
+                          <p className="text-purple-700">
+                            {trainees.find(t => t.id === selectedTraineeId)?.name}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedTraineeId('');
+                            setSearchTerm('');
+                          }}
+                          className="text-purple-600 hover:text-purple-800"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Statistics */}
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p>Available trainees: {availableTrainees.length}</p>
+                    <p>Trainees with existing plans: {existingWorkoutPlanTraineeIds.length}</p>
+                  </div>
+                </div>
+              )}
               
               <div className="flex justify-end mt-6">
                 <button
                   onClick={() => setStep(2)}
-                  disabled={!selectedTraineeId}
+                  disabled={!selectedTraineeId || loadingTrainees}
                   className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
@@ -339,6 +491,14 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
               <span>{loading ? 'Saving...' : 'Save Plan'}</span>
             </button>
           </div>
+        )}
+
+        {/* Click outside to close dropdown */}
+        {showDropdown && (
+          <div 
+            className="fixed inset-0 z-5" 
+            onClick={() => setShowDropdown(false)}
+          />
         )}
       </div>
     </div>
