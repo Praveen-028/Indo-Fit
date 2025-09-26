@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { Plus, Search, Phone, Calendar, Target, Archive, Trash2, CreditCard as Edit, MoreVertical, FileText, RotateCcw } from 'lucide-react's } from '../hooks/useTrainees';
+import { 
+  Plus, 
+  Search, 
+  Phone, 
+  Calendar, 
+  Target, 
+  Archive, 
+  Trash2, 
+  CreditCard as Edit, 
+  MoreVertical, 
+  FileText, 
+  RotateCcw 
+} from 'lucide-react';
+
+import { useTrainees } from '../hooks/useTrainees';
 import { TraineeForm } from './TraineeForm';
 import { formatDistanceToNow } from 'date-fns';
 
