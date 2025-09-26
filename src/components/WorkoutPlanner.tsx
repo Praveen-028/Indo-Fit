@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Dumbbell, Plus, Users, CreditCard as Edit, Trash2, Share, FileDown } from 'lucide-react';
+import { 
+  Dumbbell, 
+  Plus, 
+  Users, 
+  CreditCard as Edit, 
+  Trash2, 
+  Share, 
+  FileDown, 
+  Search 
+} from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
-import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { WorkoutPlan } from '../types';
 import { WorkoutPlanForm } from './WorkoutPlanForm';
@@ -15,19 +24,24 @@ export const WorkoutPlanner: React.FC = () => {
   const [selectedTraineeId, setSelectedTraineeId] = useState<string>('all');
 
   useEffect(() => {
-    const q = selectedTraineeId === 'all' 
-      ? collection(db, 'workoutPlans')
-      : query(collection(db, 'workoutPlans'), where('traineeId', '==', selectedTraineeId));
+    const q =
+      selectedTraineeId === 'all'
+        ? collection(db, 'workoutPlans')
+        : query(collection(db, 'workoutPlans'), where('traineeId', '==', selectedTraineeId));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const plans = snapshot.docs.map(doc => ({
+      const plans = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate(),
         updatedAt: doc.data().updatedAt?.toDate(),
       })) as WorkoutPlan[];
-      
-      setWorkoutPlans(plans.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
+
+      setWorkoutPlans(
+        plans.sort(
+          (a, b) => (b.updatedAt?.getTime?.() ?? 0) - (a.updatedAt?.getTime?.() ?? 0)
+        )
+      );
     });
 
     return () => unsubscribe();
@@ -49,14 +63,17 @@ export const WorkoutPlanner: React.FC = () => {
   };
 
   const handleShare = (plan: WorkoutPlan) => {
-    const trainee = trainees.find(t => t.id === plan.traineeId);
-    if (!trainee) return;
+    const trainee = trainees.find((t) => t.id === plan.traineeId);
+    if (!trainee) {
+      alert('Trainee not found for this plan');
+      return;
+    }
 
     let message = `🏋️ *Workout Plan for ${plan.traineeName}*\n\n`;
-    
+
     plan.days.forEach((day, dayIndex) => {
       message += `*Day ${dayIndex + 1}: ${day.name}*\n`;
-      
+
       day.exercises.forEach((exercise, exerciseIndex) => {
         message += `${exerciseIndex + 1}. ${exercise.name}\n`;
         message += `   Sets: ${exercise.sets} | Reps: ${exercise.reps}\n`;
@@ -65,16 +82,16 @@ export const WorkoutPlanner: React.FC = () => {
         }
         message += '\n';
       });
-      
+
       if (day.notes) {
         message += `Day Notes: ${day.notes}\n`;
       }
-      
+
       message += '\n---\n\n';
     });
-    
+
     message += 'Stay consistent and achieve your goals! 💪';
-    
+
     const url = `https://wa.me/${trainee.phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -87,9 +104,10 @@ export const WorkoutPlanner: React.FC = () => {
     }
   };
 
-  const filteredPlans = selectedTraineeId === 'all' 
-    ? workoutPlans 
-    : workoutPlans.filter(plan => plan.traineeId === selectedTraineeId);
+  const filteredPlans =
+    selectedTraineeId === 'all'
+      ? workoutPlans
+      : workoutPlans.filter((plan) => plan.traineeId === selectedTraineeId);
 
   return (
     <div className="space-y-6">
@@ -104,7 +122,7 @@ export const WorkoutPlanner: React.FC = () => {
             <p className="text-green-200 mt-1">Design and manage workout routines</p>
           </div>
         </div>
-        
+
         <button
           onClick={() => {
             setEditingPlan(null);
@@ -129,10 +147,11 @@ export const WorkoutPlanner: React.FC = () => {
             if (searchTerm === '') {
               setSelectedTraineeId('all');
             } else {
-              const foundTrainee = trainees.find(t => 
-                t.name.toLowerCase().includes(searchTerm) ||
-                t.phoneNumber.includes(searchTerm) ||
-                (t.uniqueId && t.uniqueId.toLowerCase().includes(searchTerm))
+              const foundTrainee = trainees.find(
+                (t) =>
+                  t.name.toLowerCase().includes(searchTerm) ||
+                  t.phoneNumber.includes(searchTerm) ||
+                  (t.uniqueId && t.uniqueId.toLowerCase().includes(searchTerm))
               );
               setSelectedTraineeId(foundTrainee ? foundTrainee.id : 'all');
             }
@@ -160,13 +179,15 @@ export const WorkoutPlanner: React.FC = () => {
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-ivory-100">{plan.traineeName}</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold text-ivory-100">
+                    {plan.traineeName}
+                  </h3>
                   <p className="text-green-200 text-sm mt-1">
-                    {plan.days.length} day{plan.days.length !== 1 ? 's' : ''} • 
-                    Updated {plan.updatedAt.toLocaleDateString()}
+                    {plan.days.length} day{plan.days.length !== 1 ? 's' : ''} • Updated{' '}
+                    {plan.updatedAt ? plan.updatedAt.toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
-                
+
                 <div className="flex items-center space-x-1 sm:space-x-2">
                   <button
                     onClick={() => handleEdit(plan)}
@@ -201,7 +222,7 @@ export const WorkoutPlanner: React.FC = () => {
 
               {/* Days Preview */}
               <div className="space-y-3">
-                {plan.days.slice(0, 3).map((day, index) => (
+                {plan.days.slice(0, 3).map((day) => (
                   <div key={day.id} className="bg-black/20 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-ivory-100 text-sm sm:text-base">{day.name}</h4>
@@ -209,13 +230,16 @@ export const WorkoutPlanner: React.FC = () => {
                         {day.exercises.length} exercise{day.exercises.length !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    
-                    {day.exercises.slice(0, 2).map((exercise, idx) => (
-                      <div key={exercise.id} className="text-xs sm:text-sm text-green-200 ml-2">
+
+                    {day.exercises.slice(0, 2).map((exercise) => (
+                      <div
+                        key={exercise.id}
+                        className="text-xs sm:text-sm text-green-200 ml-2"
+                      >
                         • {exercise.name} - {exercise.sets} sets × {exercise.reps} reps
                       </div>
                     ))}
-                    
+
                     {day.exercises.length > 2 && (
                       <div className="text-xs text-yellow-400 ml-2 mt-1">
                         +{day.exercises.length - 2} more exercises
@@ -223,10 +247,12 @@ export const WorkoutPlanner: React.FC = () => {
                     )}
                   </div>
                 ))}
-                
+
                 {plan.days.length > 3 && (
                   <div className="text-center py-2">
-                    <span className="text-xs sm:text-sm text-yellow-400">+{plan.days.length - 3} more days</span>
+                    <span className="text-xs sm:text-sm text-yellow-400">
+                      +{plan.days.length - 3} more days
+                    </span>
                   </div>
                 )}
               </div>
