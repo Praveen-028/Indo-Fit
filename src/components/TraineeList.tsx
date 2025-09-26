@@ -10,7 +10,9 @@ import {
   CreditCard as Edit, 
   MoreVertical, 
   FileText, 
-  RotateCcw 
+  RotateCcw,
+  Users,
+  ArchiveRestore
 } from 'lucide-react';
 
 import { useTrainees } from '../hooks/useTrainees';
@@ -18,12 +20,14 @@ import { TraineeForm } from './TraineeForm';
 import { formatDistanceToNow } from 'date-fns';
 
 export const TraineeList: React.FC = () => {
-  const { trainees, loading, archiveTrainee, deleteTrainee } = useTrainees();
+  const { trainees, archivedTrainees, loading, archiveTrainee, unarchiveTrainee, deleteTrainee } = useTrainees();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
 
-  const filteredTrainees = trainees.filter(trainee =>
+  // Filter trainees based on search term and active tab
+  const filteredTrainees = (activeTab === 'active' ? trainees : archivedTrainees).filter(trainee =>
     trainee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     trainee.phoneNumber.includes(searchTerm)
   );
@@ -34,6 +38,15 @@ export const TraineeList: React.FC = () => {
       setActiveDropdown(null);
     } catch (error) {
       console.error('Error archiving trainee:', error);
+    }
+  };
+
+  const handleUnarchive = async (traineeId: string) => {
+    try {
+      await unarchiveTrainee(traineeId);
+      setActiveDropdown(null);
+    } catch (error) {
+      console.error('Error unarchiving trainee:', error);
     }
   };
 
@@ -134,7 +147,12 @@ Keep pushing your limits! 💪
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-ivory-100">Trainees</h1>
-          <p className="text-green-200 mt-1">{trainees.length} active members</p>
+          <p className="text-green-200 mt-1">
+            {activeTab === 'active' 
+              ? `${trainees.length} active members` 
+              : `${archivedTrainees.length} archived members`
+            }
+          </p>
         </div>
         
         <button
@@ -146,12 +164,46 @@ Keep pushing your limits! 💪
         </button>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-1">
+        <button
+          onClick={() => {
+            setActiveTab('active');
+            setSearchTerm('');
+            setActiveDropdown(null);
+          }}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all flex-1 justify-center ${
+            activeTab === 'active'
+              ? 'bg-yellow-500 text-white shadow-sm'
+              : 'text-ivory-200 hover:text-ivory-100 hover:bg-white/5'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Active ({trainees.length})</span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('archived');
+            setSearchTerm('');
+            setActiveDropdown(null);
+          }}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all flex-1 justify-center ${
+            activeTab === 'archived'
+              ? 'bg-yellow-500 text-white shadow-sm'
+              : 'text-ivory-200 hover:text-ivory-100 hover:bg-white/5'
+          }`}
+        >
+          <Archive className="w-4 h-4" />
+          <span>Archived ({archivedTrainees.length})</span>
+        </button>
+      </div>
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search trainees..."
+          placeholder={`Search ${activeTab} trainees...`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 sm:py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all text-sm sm:text-base"
@@ -162,11 +214,27 @@ Keep pushing your limits! 💪
       {filteredTrainees.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-green-800/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Plus className="w-8 h-8 text-green-400" />
+            {activeTab === 'active' ? (
+              <Plus className="w-8 h-8 text-green-400" />
+            ) : (
+              <Archive className="w-8 h-8 text-green-400" />
+            )}
           </div>
-          <h3 className="text-xl font-semibold text-ivory-100 mb-2">No trainees found</h3>
+          <h3 className="text-xl font-semibold text-ivory-100 mb-2">
+            {searchTerm 
+              ? `No ${activeTab} trainees found` 
+              : activeTab === 'active' 
+                ? 'No active trainees' 
+                : 'No archived trainees'
+            }
+          </h3>
           <p className="text-green-200 mb-6">
-            {searchTerm ? 'Try a different search term.' : 'Get started by adding your first trainee.'}
+            {searchTerm 
+              ? 'Try a different search term.' 
+              : activeTab === 'active'
+                ? 'Get started by adding your first trainee.'
+                : 'Archived trainees will appear here.'
+            }
           </p>
         </div>
       ) : (
@@ -177,13 +245,20 @@ Keep pushing your limits! 💪
             return (
               <div
                 key={trainee.id}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group"
+                className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group ${
+                  activeTab === 'archived' ? 'opacity-75' : ''
+                }`}
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="text-base sm:text-lg font-semibold text-ivory-100 group-hover:text-yellow-400 transition-colors">
                       {trainee.name}
+                      {activeTab === 'archived' && (
+                        <span className="ml-2 text-xs bg-gray-500/20 text-gray-300 px-2 py-1 rounded-full">
+                          Archived
+                        </span>
+                      )}
                     </h3>
                     <div className="flex items-center space-x-2 text-sm text-green-200 mt-1">
                       <Phone className="w-4 h-4" />
@@ -201,20 +276,32 @@ Keep pushing your limits! 💪
                     
                     {activeDropdown === trainee.id && (
                       <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[160px]">
-                        <button
-                          onClick={() => handleGenerateInvoice(trainee)}
-                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <FileText className="w-4 h-4" />
-                          <span>Invoice</span>
-                        </button>
-                        <button
-                          onClick={() => handleArchive(trainee.id)}
-                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <Archive className="w-4 h-4" />
-                          <span>Archive</span>
-                        </button>
+                        {activeTab === 'active' ? (
+                          <>
+                            <button
+                              onClick={() => handleGenerateInvoice(trainee)}
+                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span>Invoice</span>
+                            </button>
+                            <button
+                              onClick={() => handleArchive(trainee.id)}
+                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <Archive className="w-4 h-4" />
+                              <span>Archive</span>
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleUnarchive(trainee.id)}
+                            className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-blue-600 hover:bg-blue-50"
+                          >
+                            <ArchiveRestore className="w-4 h-4" />
+                            <span>Unarchive</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(trainee.id)}
                           className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50"
@@ -227,12 +314,24 @@ Keep pushing your limits! 💪
                   </div>
                 </div>
 
-                {/* Status Badge */}
-                <div className="mb-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${expiryStatus.color}`}>
-                    {expiryStatus.text}
-                  </span>
-                </div>
+                {/* Status Badge - Only show for active trainees */}
+                {activeTab === 'active' && (
+                  <div className="mb-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${expiryStatus.color}`}>
+                      {expiryStatus.text}
+                    </span>
+                  </div>
+                )}
+
+                {/* Archived Badge */}
+                {activeTab === 'archived' && (
+                  <div className="mb-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <Archive className="w-3 h-3 mr-1" />
+                      Archived
+                    </span>
+                  </div>
+                )}
 
                 {/* Details */}
                 <div className="space-y-3">
@@ -254,7 +353,9 @@ Keep pushing your limits! 💪
                   </div>
                   
                   <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="text-green-200">Expires:</span>
+                    <span className="text-green-200">
+                      {activeTab === 'active' ? 'Expires:' : 'Expired:'}
+                    </span>
                     <span className="text-ivory-100 font-medium">
                       {new Date(trainee.membershipEndDate).toLocaleDateString()}
                     </span>
