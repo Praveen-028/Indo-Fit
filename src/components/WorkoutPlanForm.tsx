@@ -25,6 +25,20 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
   const [existingWorkoutPlanTraineeIds, setExistingWorkoutPlanTraineeIds] = useState<string[]>([]);
   const [loadingTrainees, setLoadingTrainees] = useState(false);
 
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset all form state when modal closes
+      setStep(1);
+      setSelectedTraineeId('');
+      setNumberOfDays(3);
+      setWorkoutDays([]);
+      setSearchTerm('');
+      setShowDropdown(false);
+      setLoading(false);
+    }
+  }, [isOpen]);
+
   // Fetch existing workout plan trainee IDs
   useEffect(() => {
     const fetchExistingWorkoutPlans = async () => {
@@ -52,9 +66,9 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
     fetchExistingWorkoutPlans();
   }, [isOpen, editingPlan]);
 
-  // Initialize form data when editing
+  // Initialize form data when editing (only after modal is open and data is loaded)
   useEffect(() => {
-    if (editingPlan) {
+    if (isOpen && editingPlan && !loadingTrainees) {
       setSelectedTraineeId(editingPlan.traineeId);
       setNumberOfDays(editingPlan.days.length);
       setWorkoutDays(editingPlan.days);
@@ -65,15 +79,8 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
       if (trainee) {
         setSearchTerm(trainee.name);
       }
-    } else {
-      // Reset form
-      setSelectedTraineeId('');
-      setNumberOfDays(3);
-      setWorkoutDays([]);
-      setStep(1);
-      setSearchTerm('');
     }
-  }, [editingPlan, trainees]);
+  }, [isOpen, editingPlan, trainees, loadingTrainees]);
 
   // Filter available trainees
   const availableTrainees = trainees.filter(trainee => {
