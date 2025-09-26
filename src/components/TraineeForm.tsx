@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowRight, ArrowLeft, UserPlus } from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
 import { Trainee } from '../types';
@@ -6,9 +6,14 @@ import { Trainee } from '../types';
 interface TraineeFormProps {
   isOpen: boolean;
   onClose: () => void;
+  editingTrainee?: Trainee | null; // NEW: Optional editing trainee prop
 }
 
-export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => {
+export const TraineeForm: React.FC<TraineeFormProps> = ({
+  isOpen,
+  onClose,
+  editingTrainee // NEW: Receive editingTrainee prop
+}) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -21,7 +26,39 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { addTrainee, trainees } = useTrainees();
+  // Assuming useTrainees now returns updateTrainee
+  const { addTrainee, updateTrainee, trainees } = useTrainees();
+
+  // NEW: Effect to populate form when editing and reset when closing/adding
+  useEffect(() => {
+    if (isOpen && editingTrainee) {
+      // Populate form for editing
+      setFormData({
+        name: editingTrainee.name,
+        phoneNumber: editingTrainee.phoneNumber,
+        membershipDuration: editingTrainee.membershipDuration,
+        admissionFee: editingTrainee.admissionFee,
+        specialTraining: editingTrainee.specialTraining,
+        goalCategory: editingTrainee.goalCategory,
+        paymentType: editingTrainee.paymentType,
+      });
+      // Always start from step 1 when opening the form
+      setStep(1);
+    } else if (isOpen && !editingTrainee) {
+      // Reset form for a new trainee
+      setFormData({
+        name: '',
+        phoneNumber: '',
+        membershipDuration: 1,
+        admissionFee: 0,
+        specialTraining: false,
+        goalCategory: 'Weight Loss',
+        paymentType: 'Cash',
+      });
+      setStep(1);
+    }
+    setError(''); // Clear any existing errors
+  }, [editingTrainee, isOpen]);
 
   const validatePhoneNumber = (phone: string) => {
     // Indian mobile number validation
@@ -36,7 +73,11 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
       return;
     }
 
-    const exists = trainees.some(t => t.phoneNumber === formData.phoneNumber);
+    // NEW: When editing, skip phone number duplicate check if it's the same trainee's phone
+    const exists = trainees.some(t =>
+      t.phoneNumber === formData.phoneNumber &&
+      t.id !== editingTrainee?.id // Allow same phone for current trainee
+    );
     if (exists) {
       setError('Phone number already exists');
       return;
@@ -44,40 +85,60 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
 
     setLoading(true);
     try {
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + formData.membershipDuration);
+      if (editingTrainee) {
+        // NEW: Update existing trainee
+        const updates: Partial<Trainee> = {
+          name: formData.name,
+          phoneNumber: formData.phoneNumber,
+          membershipDuration: formData.membershipDuration,
+          admissionFee: formData.admissionFee,
+          specialTraining: formData.specialTraining,
+          goalCategory: formData.goalCategory,
+          paymentType: formData.paymentType,
+          // Do not update uniqueId, createdAt, isActive here unless explicitly needed
+        };
 
-      const trainee: Omit<Trainee, 'id'> = {
-        uniqueId: formData.phoneNumber,
-        name: formData.name,
-        phoneNumber: formData.phoneNumber,
-        membershipDuration: formData.membershipDuration,
-        membershipStartDate: startDate,
-        membershipEndDate: endDate,
-        admissionFee: formData.admissionFee,
-        specialTraining: formData.specialTraining,
-        goalCategory: formData.goalCategory,
-        paymentType: formData.paymentType,
-        isActive: true,
-        createdAt: new Date(),
-      };
+        // NEW: Only recalculate membership dates if duration changed
+        if (formData.membershipDuration !== editingTrainee.membershipDuration) {
+          // Use the original start date to calculate the new end date
+          const startDate = editingTrainee.membershipStartDate; 
+          const endDate = new Date(startDate);
+          // Note: membershipStartDate might be a string if not properly typed as Date, 
+          // ensure it's handled correctly by your useTrainees hook/types
+          endDate.setMonth(endDate.getMonth() + formData.membershipDuration);
+          updates.membershipEndDate = endDate;
+        }
 
-      await addTrainee(trainee);
+        await updateTrainee(editingTrainee.id, updates);
+      } else {
+        // Original add trainee logic
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + formData.membershipDuration);
+
+        const trainee: Omit<Trainee, 'id'> = {
+          uniqueId: formData.phoneNumber,
+          name: formData.name,
+          phoneNumber: formData.phoneNumber,
+          membershipDuration: formData.membershipDuration,
+          membershipStartDate: startDate,
+          membershipEndDate: endDate,
+          admissionFee: formData.admissionFee,
+          specialTraining: formData.specialTraining,
+          goalCategory: formData.goalCategory,
+          paymentType: formData.paymentType,
+          isActive: true,
+          createdAt: new Date(),
+        };
+
+        await addTrainee(trainee);
+      }
+
       onClose();
-      setStep(1);
-      setFormData({
-        name: '',
-        phoneNumber: '',
-        membershipDuration: 1,
-        admissionFee: 0,
-        specialTraining: false,
-        goalCategory: 'Weight Loss',
-        paymentType: 'Cash',
-      });
+      // Form reset is handled by the useEffect on `editingTrainee` and `isOpen` change
     } catch (err) {
       console.error(err);
-      setError('Error adding trainee');
+      setError(editingTrainee ? 'Error updating trainee' : 'Error adding trainee');
     } finally {
       setLoading(false);
     }
@@ -94,7 +155,10 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
             <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
               <UserPlus className="w-4 h-4 text-green-900" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-white">Add New Trainee</h2>
+            {/* Dynamic header text */}
+            <h2 className="text-lg sm:text-xl font-bold text-white">
+              {editingTrainee ? 'Edit Trainee' : 'Add New Trainee'}
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -111,7 +175,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
             <span className="text-sm text-green-600">{step === 1 ? 'Basic Info' : 'Membership Details'}</span>
           </div>
           <div className="w-full bg-green-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-gradient-to-r from-green-600 to-green-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(step / 2) * 100}%` }}
             />
@@ -122,6 +186,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
           {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
 
           {step === 1 ? (
+            // --- STEP 1: Basic Info (Name & Phone) ---
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
@@ -142,10 +207,19 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
                   placeholder="Enter phone number"
+                  // Disable phone editing for existing trainees to avoid conflicts
+                  disabled={editingTrainee ? true : false}
                 />
+                {/* Show note when editing */}
+                {editingTrainee && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Phone number cannot be changed when editing
+                  </p>
+                )}
               </div>
             </div>
           ) : (
+            // --- STEP 2: Membership Details ---
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Membership Duration</label>
@@ -159,6 +233,12 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
                   <option value={6}>6 Months</option>
                   <option value={12}>12 Months</option>
                 </select>
+                {/* Show warning when editing membership duration */}
+                {editingTrainee && formData.membershipDuration !== editingTrainee.membershipDuration && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    ⚠️ Changing duration will recalculate membership end date from original start date
+                  </p>
+                )}
               </div>
 
               <div>
@@ -219,7 +299,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between mt-6 sm:mt-8 px-4 sm:px-6 pb-4 sm:pb-6">
+          <div className="flex items-center justify-between mt-6 sm:mt-8">
             {step === 2 && (
               <button
                 onClick={() => setStep(1)}
@@ -245,7 +325,8 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({ isOpen, onClose }) => 
                 disabled={loading}
                 className="ml-auto px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 disabled:opacity-50 transition-all text-sm sm:text-base"
               >
-                {loading ? 'Adding...' : 'Add Trainee'}
+                {/* Dynamic Button Text */}
+                {loading ? (editingTrainee ? 'Updating...' : 'Adding...') : (editingTrainee ? 'Update Trainee' : 'Add Trainee')}
               </button>
             )}
           </div>
