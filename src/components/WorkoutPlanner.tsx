@@ -105,54 +105,45 @@ export const WorkoutPlanner: React.FC = () => {
     }
   };
 
-  // Updated filtering logic
+  // Updated filtering logic with debugging
   const filteredPlans = workoutPlans.filter((plan) => {
-    // First apply trainee selection filter
-    if (selectedTraineeId !== 'all' && plan.traineeId !== selectedTraineeId) {
-      return false;
-    }
-    
-    // Then apply search term filter
+    // If no search term, show all plans
     if (searchTerm.trim() === '') {
       return true;
     }
     
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      plan.traineeName.toLowerCase().includes(searchLower) ||
-      plan.days.some(day => 
-        day.name.toLowerCase().includes(searchLower) ||
-        day.exercises.some(exercise => 
-          exercise.name.toLowerCase().includes(searchLower)
-        )
+    const searchLower = searchTerm.toLowerCase().trim();
+    
+    // Search in trainee name (most important)
+    const traineeNameMatch = plan.traineeName && 
+      plan.traineeName.toLowerCase().includes(searchLower);
+    
+    // Search in day names
+    const dayNameMatch = plan.days && plan.days.some(day => 
+      day.name && day.name.toLowerCase().includes(searchLower)
+    );
+    
+    // Search in exercise names
+    const exerciseNameMatch = plan.days && plan.days.some(day => 
+      day.exercises && day.exercises.some(exercise => 
+        exercise.name && exercise.name.toLowerCase().includes(searchLower)
       )
     );
+    
+    return traineeNameMatch || dayNameMatch || exerciseNameMatch;
   });
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     
-    // If search is cleared, reset to show all
-    if (value.trim() === '') {
-      setSelectedTraineeId('all');
-      return;
-    }
+    // Reset trainee selection to show all when searching
+    setSelectedTraineeId('all');
     
-    // Try to find matching trainee and auto-select
-    const searchLower = value.toLowerCase();
-    const foundTrainee = trainees.find(
-      (t) =>
-        t.name.toLowerCase().includes(searchLower) ||
-        t.phoneNumber.includes(value) ||
-        (t.uniqueId && t.uniqueId.toLowerCase().includes(searchLower))
-    );
-    
-    if (foundTrainee) {
-      setSelectedTraineeId(foundTrainee.id);
-    } else {
-      setSelectedTraineeId('all');
-    }
+    // Debug logging - remove this after testing
+    console.log('Search term:', value);
+    console.log('All workout plans:', workoutPlans.map(p => ({ id: p.id, traineeName: p.traineeName })));
+    console.log('All trainees:', trainees.map(t => ({ id: t.id, name: t.name })));
   };
 
   return (
@@ -200,24 +191,29 @@ export const WorkoutPlanner: React.FC = () => {
             <Dumbbell className="w-8 h-8 text-purple-400" />
           </div>
           <h3 className="text-xl font-semibold text-ivory-100 mb-2">
-            {searchTerm ? 'No matching workout plans found' : 'No workout plans found'}
+            {searchTerm ? `No results found for "${searchTerm}"` : 'No workout plans found'}
           </h3>
           <p className="text-green-200 mb-6">
             {searchTerm 
-              ? 'Try adjusting your search terms or create a new plan.' 
+              ? 'Try checking the spelling or create a new plan for this trainee.' 
               : 'Create your first workout plan to get started.'
             }
           </p>
           {searchTerm && (
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedTraineeId('all');
-              }}
-              className="px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors"
-            >
-              Clear Search
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedTraineeId('all');
+                }}
+                className="px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors mr-3"
+              >
+                Clear Search
+              </button>
+              <div className="text-sm text-gray-400 mt-3">
+                Debug info: Found {workoutPlans.length} total plans, searching for "{searchTerm}"
+              </div>
+            </div>
           )}
         </div>
       ) : (
