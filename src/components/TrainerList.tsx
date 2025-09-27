@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Phone, Archive, Trash2, MoreVertical, FileText, RotateCcw, CreditCard as Edit, UserCheck } from 'lucide-react';
+import { Plus, Search, Phone, Archive, Trash2, MoreVertical, RotateCcw, CreditCard as Edit, UserCheck } from 'lucide-react';
 
 import { useTrainers } from '../hooks/useTrainers';
 import { TrainerForm } from './TrainerForm';
@@ -71,48 +71,6 @@ export const TrainerList: React.FC = () => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingTrainer(null);
-  };
-
-  const handleGenerateContract = async (trainer: Trainer) => {
-    try {
-      const contractMessage = `📋 *TRAINER CONTRACT - INDOFIT GYM*
-*Physique LAB7.0*
-
-━━━━━━━━━━━━━━━━━━━━━━━
-
-👨‍💼 *Trainer Information:*
-• Name: ${trainer.name}
-• Trainer ID: ${trainer.uniqueId}
-• Phone: ${trainer.phoneNumber}
-• Email: ${trainer.email || 'Not provided'}
-
-💼 *Employment Details:*
-• Joining Date: ${new Date(trainer.joiningDate).toLocaleDateString()}
-• Specialization: ${trainer.specialization}
-• Experience: ${trainer.experience} year(s)
-• Monthly Salary: ₹${trainer.salary}
-
-━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ *Status: ACTIVE TRAINER*
-
-Welcome to the INDOFIT GYM family! 💪
-
-*Contact us:* [Your gym contact details]`;
-      
-      const phoneNumber = trainer.phoneNumber.replace(/[^\d]/g, '');
-      const whatsappNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
-      const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(contractMessage)}`;
-      
-      window.open(whatsappURL, '_blank');
-      setActiveDropdown(null);
-      
-      alert(`Contract details ready! WhatsApp will open to send complete contract information to ${trainer.name}.`);
-      
-    } catch (error) {
-      console.error('Error generating contract:', error);
-      alert('Error generating contract. Please try again.');
-    }
   };
 
   if (loading) {
@@ -251,15 +209,6 @@ Welcome to the INDOFIT GYM family! 💪
                       >
                         <Edit className="w-4 h-4" />
                         <span>Edit</span>
-                      </button>
-                      
-                      {/* Contract */}
-                      <button
-                        onClick={() => handleGenerateContract(trainer)}
-                        className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span>Contract</span>
                       </button>
                       
                       {currentView === 'active' ? (
