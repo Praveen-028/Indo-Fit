@@ -32,6 +32,7 @@ On ${enquiryDate.trim()}, you had enquired with us about starting your fitness j
 ✅ Weekly Outdoor & Sports Activities
 ✅ Pre-book Ice Bath 🧊 (₹500)
 ✅ Certified & Experienced Trainers
+✅ Rehabilitation
 
 📍 Location: Behind Zudio
 📞 Contact us: 6383328828
