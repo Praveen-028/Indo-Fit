@@ -25,20 +25,26 @@ const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children }) => 
       
       {/* Header */}
       <header className="relative z-10 bg-green-800/90 backdrop-blur-md border-b border-green-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center">
-                <Dumbbell className="w-6 h-6 text-green-900" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-ivory-100">INDO FIT Fitness Studio & Gym</h1>
-                <p className="text-sm text-green-200">Team of Physique LAB7.0</p>
-              </div>
-            </div>
-          </div>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="flex items-center justify-between h-16">
+      <div className="flex items-center space-x-3">
+        <div className="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center">
+          <Dumbbell className="w-6 h-6 text-green-900" />
         </div>
-      </header>
+        <div>
+          <h1 className="text-xl font-bold text-ivory-100">INDO FIT Fitness Studio & Gym</h1>
+          <p className="text-sm text-green-200">Team of Physique LAB7.0</p>
+        </div>
+      </div>
+      
+      {/* Coach Information */}
+      <div className="text-right">
+        <h2 className="text-lg font-bold text-ivory-100">V.K. KESAVAN</h2>
+        <p className="text-sm text-green-200">FITNESS AND LIFESTYLE COACH</p>
+      </div>
+    </div>
+  </div>
+</header>
 
       {/* Navigation */}
       <nav className="relative z-10 bg-green-800/80 backdrop-blur-md border-b border-green-700/30">
