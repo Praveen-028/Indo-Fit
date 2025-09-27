@@ -7,17 +7,18 @@ export const NotificationPanel: React.FC = () => {
   const [showDialog, setShowDialog] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [enquiryDate, setEnquiryDate] = useState('');
 
   const handleSendCustomMessage = () => {
-    if (!phoneNumber.trim()) {
-      alert('Please enter a phone number');
+    if (!phoneNumber.trim() || !enquiryDate.trim()) {
+      alert('Please enter phone number and enquiry date');
       return;
     }
 
     const greeting = customerName.trim() ? `Hai ${customerName.trim()}` : 'Hai';
     const message = `${greeting} 🌟 Hello! This is Kesavan from INDO FIT Fitness Studio – Team Physique Lab 7.0 💪🔥
 
-On 26/09/2025, you had enquired with us about starting your fitness journey, and I’d love to share what we offer to help you reach your goals 🚀
+On ${enquiryDate.trim()}, you had enquired with us about starting your fitness journey, and I’d love to share what we offer to help you reach your goals 🚀
 
 🏋️ Our Services
 
@@ -49,6 +50,7 @@ FITNESS AND LIFESTYLE COACH`;
     // Reset form and close dialog
     setPhoneNumber('');
     setCustomerName('');
+    setEnquiryDate('');
     setShowDialog(false);
   };
 
@@ -175,6 +177,19 @@ FITNESS AND LIFESTYLE COACH`;
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400"
                 />
                 <p className="text-xs text-gray-400 mt-1">Include country code (e.g., 91 for India)</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-200 mb-2">
+                  Enquiry Date *
+                </label>
+                <input
+                  type="text"
+                  value={enquiryDate}
+                  onChange={(e) => setEnquiryDate(e.target.value)}
+                  placeholder="Enter date (e.g., 26/09/2025)"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-ivory-100 placeholder-gray-400 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400"
+                />
               </div>
 
               <div>
