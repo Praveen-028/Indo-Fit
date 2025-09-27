@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowRight, ArrowLeft, UserPlus } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, UserPlus, Users } from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
+import { useTrainers } from '../hooks/useTrainers'; // Import the trainers hook
 import { Trainee } from '../types';
 
 interface TraineeFormProps {
@@ -16,30 +17,33 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
 }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    memberId: '', // NEW: Added member ID field
+    memberId: '',
     name: '',
     phoneNumber: '',
     membershipDuration: 1,
     admissionFee: 0,
     specialTraining: false,
+    assignedTrainerId: '', // NEW: Added trainer assignment field
     goalCategory: 'Weight Loss' as const,
     paymentType: 'Cash' as const,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { addTrainee, updateTrainee, trainees } = useTrainees();
+  const { trainers, loading: trainersLoading } = useTrainers(); // Get trainers data
 
   // Effect to populate form when editing and reset when closing/adding
   useEffect(() => {
     if (isOpen && editingTrainee) {
       // Populate form for editing
       setFormData({
-        memberId: editingTrainee.memberId || editingTrainee.uniqueId || '', // Use memberId or fallback to uniqueId
+        memberId: editingTrainee.memberId || editingTrainee.uniqueId || '',
         name: editingTrainee.name,
         phoneNumber: editingTrainee.phoneNumber,
         membershipDuration: editingTrainee.membershipDuration,
         admissionFee: editingTrainee.admissionFee,
         specialTraining: editingTrainee.specialTraining,
+        assignedTrainerId: editingTrainee.assignedTrainerId || '', // Load assigned trainer
         goalCategory: editingTrainee.goalCategory,
         paymentType: editingTrainee.paymentType,
       });
@@ -53,6 +57,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
         membershipDuration: 1,
         admissionFee: 0,
         specialTraining: false,
+        assignedTrainerId: '',
         goalCategory: 'Weight Loss',
         paymentType: 'Cash',
       });
@@ -72,6 +77,17 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
     return memberId.trim().length >= 3;
   };
 
+  // Handle special training toggle
+  const handleSpecialTrainingToggle = () => {
+    const newSpecialTraining = !formData.specialTraining;
+    setFormData({ 
+      ...formData, 
+      specialTraining: newSpecialTraining,
+      // Clear trainer assignment if special training is disabled
+      assignedTrainerId: newSpecialTraining ? formData.assignedTrainerId : ''
+    });
+  };
+
   const handleSubmit = async () => {
     setError('');
     
@@ -84,6 +100,12 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
     // Validate phone number
     if (!validatePhoneNumber(formData.phoneNumber)) {
       setError('Invalid phone number format');
+      return;
+    }
+
+    // Validate trainer assignment if special training is enabled
+    if (formData.specialTraining && !formData.assignedTrainerId) {
+      setError('Please select a trainer for special training');
       return;
     }
 
@@ -118,6 +140,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
           membershipDuration: formData.membershipDuration,
           admissionFee: formData.admissionFee,
           specialTraining: formData.specialTraining,
+          assignedTrainerId: formData.specialTraining ? formData.assignedTrainerId : undefined,
           goalCategory: formData.goalCategory,
           paymentType: formData.paymentType,
         };
@@ -138,8 +161,8 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
         endDate.setMonth(endDate.getMonth() + formData.membershipDuration);
 
         const trainee: Omit<Trainee, 'id'> = {
-          memberId: formData.memberId.trim(), // Use user-provided member ID
-          uniqueId: formData.memberId.trim(), // Also set as uniqueId for backward compatibility
+          memberId: formData.memberId.trim(),
+          uniqueId: formData.memberId.trim(),
           name: formData.name,
           phoneNumber: formData.phoneNumber,
           membershipDuration: formData.membershipDuration,
@@ -147,6 +170,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
           membershipEndDate: endDate,
           admissionFee: formData.admissionFee,
           specialTraining: formData.specialTraining,
+          assignedTrainerId: formData.specialTraining ? formData.assignedTrainerId : undefined,
           goalCategory: formData.goalCategory,
           paymentType: formData.paymentType,
           isActive: true,
@@ -314,11 +338,12 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
                 </select>
               </div>
 
+              {/* Special Training Toggle */}
               <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">Special Training</span>
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, specialTraining: !formData.specialTraining })}
+                  onClick={handleSpecialTrainingToggle}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     formData.specialTraining ? 'bg-green-600' : 'bg-gray-300'
                   }`}
@@ -330,6 +355,56 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
                   />
                 </button>
               </div>
+
+              {/* Trainer Selection - Only show when special training is enabled */}
+              {formData.specialTraining && (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Users className="w-4 h-4" />
+                      <span>Assign Trainer</span>
+                    </div>
+                  </label>
+                  
+                  {trainersLoading ? (
+                    <div className="text-sm text-gray-500 text-center py-2">
+                      Loading trainers...
+                    </div>
+                  ) : trainers.length === 0 ? (
+                    <div className="text-sm text-red-600 text-center py-2">
+                      No active trainers available
+                    </div>
+                  ) : (
+                    <select
+                      value={formData.assignedTrainerId}
+                      onChange={(e) => setFormData({ ...formData, assignedTrainerId: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                    >
+                      <option value="">Select a trainer</option>
+                      {trainers.map((trainer) => (
+                        <option key={trainer.id} value={trainer.id}>
+                          {trainer.name} - {trainer.specialization}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  
+                  {formData.assignedTrainerId && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      {(() => {
+                        const selectedTrainer = trainers.find(t => t.id === formData.assignedTrainerId);
+                        return selectedTrainer ? (
+                          <div className="text-sm text-blue-800">
+                            <p className="font-medium">{selectedTrainer.name}</p>
+                            <p className="text-blue-600">{selectedTrainer.specialization}</p>
+                            <p className="text-blue-600">Experience: {selectedTrainer.experience} years</p>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
