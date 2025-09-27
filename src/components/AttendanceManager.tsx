@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar, Users, Check, X, ChevronLeft, ChevronRight, Search, Download, FileText } from 'lucide-react';
 import { useTrainees } from '../hooks/useTrainees';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { AttendanceRecord } from '../types';
 import { format, startOfDay, endOfDay, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths, subMonths, addYears, subYears, getDaysInMonth, getDay } from 'date-fns';
 import { isToday, isPastDate, isFutureDate } from '../utils/traineeUtils';
+import jsPDF from 'jspdf';
 
 export const AttendanceManager: React.FC = () => {
   const { trainees } = useTrainees();
@@ -16,6 +17,7 @@ export const AttendanceManager: React.FC = () => {
   const [showDayModal, setShowDayModal] = useState(false);
   const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
   const [selectedDayRecords, setSelectedDayRecords] = useState<AttendanceRecord[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load attendance records for selected date/period
   useEffect(() => {
@@ -59,6 +61,143 @@ export const AttendanceManager: React.FC = () => {
 
     return () => unsubscribe();
   }, [selectedDate, view]);
+
+  // Filter trainees based on search query
+  const filteredTrainees = useMemo(() => {
+    if (!searchQuery.trim()) return trainees;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return trainees.filter(trainee =>
+      trainee.name.toLowerCase().includes(query) ||
+      trainee.phoneNumber.includes(query) ||
+      trainee.uniqueId.toLowerCase().includes(query)
+    );
+  }, [trainees, searchQuery]);
+
+  // Add branding to PDF
+  const addBranding = (pdf: jsPDF) => {
+    // Header background
+    pdf.setFillColor(6, 78, 59); // Green color
+    pdf.rect(0, 0, 210, 40, 'F');
+    
+    // Logo area
+    pdf.setFillColor(251, 191, 36); // Yellow color
+    pdf.rect(15, 10, 20, 20, 'F');
+    
+    // Logo text
+    pdf.setTextColor(6, 78, 59);
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('IF', 25, 23);
+    
+    // Gym name
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(24);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('INDOFIT GYM', 45, 25);
+    
+    // Subtitle
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Physique LAB7.0', 45, 32);
+    
+    // Reset colors
+    pdf.setTextColor(0, 0, 0);
+  };
+
+  // Export day attendance to PDF
+  const exportDayAttendance = async (date: Date, records: AttendanceRecord[]) => {
+    const pdf = new jsPDF();
+    
+    // Add branding
+    addBranding(pdf);
+    
+    // Title
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Daily Attendance Report', 20, 60);
+    
+    // Date and subtitle
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Date: ${format(date, 'EEEE, MMMM d, yyyy')}`, 20, 75);
+    pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 85);
+    
+    // Summary stats
+    const presentCount = records.filter(r => r.present).length;
+    const absentCount = records.filter(r => !r.present).length;
+    const totalCount = records.length;
+    
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Summary:', 20, 105);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Total Attendance Records: ${totalCount}`, 20, 115);
+    pdf.text(`Present: ${presentCount}`, 20, 125);
+    pdf.text(`Absent: ${absentCount}`, 20, 135);
+    
+    if (totalCount > 0) {
+      const attendancePercentage = ((presentCount / totalCount) * 100).toFixed(1);
+      pdf.text(`Attendance Rate: ${attendancePercentage}%`, 20, 145);
+    }
+    
+    let y = 165;
+    
+    if (records.length === 0) {
+      pdf.text('No attendance records found for this date.', 20, y);
+    } else {
+      // Table headers
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Name', 20, y);
+      pdf.text('Status', 120, y);
+      y += 10;
+      
+      // Draw line under headers
+      pdf.line(20, y, 190, y);
+      y += 10;
+      
+      // Sort records by name
+      const sortedRecords = [...records].sort((a, b) => a.traineeName.localeCompare(b.traineeName));
+      
+      pdf.setFont('helvetica', 'normal');
+      sortedRecords.forEach((record) => {
+        // Check if we need a new page
+        if (y > 270) {
+          pdf.addPage();
+          addBranding(pdf);
+          y = 60;
+          
+          // Re-add headers on new page
+          pdf.setFont('helvetica', 'bold');
+          pdf.text('Name', 20, y);
+          pdf.text('Status', 120, y);
+          y += 10;
+          pdf.line(20, y, 190, y);
+          y += 10;
+          pdf.setFont('helvetica', 'normal');
+        }
+        
+        pdf.text(record.traineeName, 20, y);
+        
+        // Set color for status
+        if (record.present) {
+          pdf.setTextColor(0, 128, 0); // Green
+          pdf.text('Present', 120, y);
+        } else {
+          pdf.setTextColor(255, 0, 0); // Red
+          pdf.text('Absent', 120, y);
+        }
+        
+        pdf.setTextColor(0, 0, 0); // Reset to black
+        y += 8;
+      });
+    }
+    
+    // Download the PDF
+    const fileName = `attendance-${format(date, 'yyyy-MM-dd')}.pdf`;
+    pdf.save(fileName);
+  };
 
   const markAttendance = async (traineeId: string, traineeName: string, present: boolean) => {
     // Only allow marking attendance for today
@@ -209,25 +348,38 @@ export const AttendanceManager: React.FC = () => {
       days.push(
         <div
           key={day}
-          className={`h-20 sm:h-24 border border-white/20 p-1 sm:p-2 cursor-pointer hover:bg-white/10 transition-colors ${
+          className={`h-20 sm:h-24 border border-white/20 p-1 sm:p-2 cursor-pointer hover:bg-white/10 transition-colors group relative ${
             isToday(date) ? 'bg-blue-500/20 border-blue-400' : ''
           }`}
           onClick={() => handleDayClick(date)}
         >
           <div className="text-xs sm:text-sm font-medium text-ivory-100 mb-1">{day}</div>
           {totalCount > 0 && (
-            <div className="space-y-1">
-              <div className="text-xs flex items-center justify-between">
-                <span className="text-green-400">P: {presentCount}</span>
-                <span className="text-red-400">A: {absentCount}</span>
+            <>
+              <div className="space-y-1">
+                <div className="text-xs flex items-center justify-between">
+                  <span className="text-green-400">P: {presentCount}</span>
+                  <span className="text-red-400">A: {absentCount}</span>
+                </div>
+                <div className="w-full bg-gray-600 rounded-full h-1">
+                  <div
+                    className="bg-green-500 h-1 rounded-full"
+                    style={{ width: totalCount > 0 ? `${(presentCount / totalCount) * 100}%` : '0%' }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-600 rounded-full h-1">
-                <div
-                  className="bg-green-500 h-1 rounded-full"
-                  style={{ width: totalCount > 0 ? `${(presentCount / totalCount) * 100}%` : '0%' }}
-                ></div>
-              </div>
-            </div>
+              {/* Export button - shows on hover */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  exportDayAttendance(date, dayRecords);
+                }}
+                className="absolute top-1 right-1 p-1 bg-blue-500/80 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
+                title="Export attendance for this day"
+              >
+                <Download className="w-3 h-3" />
+              </button>
+            </>
           )}
         </div>
       );
@@ -264,14 +416,44 @@ export const AttendanceManager: React.FC = () => {
       months.push(
         <div
           key={month}
-          className="bg-white/10 border border-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/15 transition-colors"
+          className="bg-white/10 border border-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/15 transition-colors group"
           onClick={() => {
             setSelectedDate(monthDate);
             setView('monthly');
           }}
         >
           <div className="text-center">
-            <h3 className="font-semibold text-ivory-100 mb-2">{format(monthDate, 'MMM')}</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-ivory-100">{format(monthDate, 'MMM')}</h3>
+              {totalCount > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Export all days in the month that have attendance
+                    const daysWithAttendance = new Set(
+                      monthRecords.map(record => format(record.date, 'yyyy-MM-dd'))
+                    );
+                    
+                    if (daysWithAttendance.size === 1) {
+                      // If only one day has attendance, export that day
+                      const singleDay = new Date([...daysWithAttendance][0]);
+                      const dayRecords = monthRecords.filter(record => 
+                        format(record.date, 'yyyy-MM-dd') === format(singleDay, 'yyyy-MM-dd')
+                      );
+                      exportDayAttendance(singleDay, dayRecords);
+                    } else {
+                      // Navigate to monthly view for multiple days
+                      setSelectedDate(monthDate);
+                      setView('monthly');
+                    }
+                  }}
+                  className="p-1 bg-blue-500/80 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
+                  title="View month details"
+                >
+                  <FileText className="w-4 h-4" />
+                </button>
+              )}
+            </div>
             {totalCount > 0 ? (
               <div className="space-y-2">
                 <div className="text-sm">
@@ -334,6 +516,27 @@ export const AttendanceManager: React.FC = () => {
         </div>
       </div>
 
+      {/* Search Bar - Only show in daily view */}
+      {view === 'daily' && (
+        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-ivory-300" />
+            <input
+              type="text"
+              placeholder="Search trainees by name, phone, or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-ivory-100 placeholder-ivory-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+            />
+          </div>
+          {searchQuery && (
+            <div className="mt-2 text-sm text-ivory-300">
+              Found {filteredTrainees.length} trainee{filteredTrainees.length !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Date Navigation */}
       <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 sm:p-6">
         <div className="flex items-center justify-between">
@@ -379,13 +582,15 @@ export const AttendanceManager: React.FC = () => {
       {/* Content based on view */}
       {view === 'daily' && (
         <div className="space-y-4">
-          {trainees.length === 0 ? (
+          {filteredTrainees.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-green-400 mx-auto mb-4" />
-              <p className="text-ivory-200">No trainees found</p>
+              <p className="text-ivory-200">
+                {searchQuery ? 'No trainees found matching your search' : 'No trainees found'}
+              </p>
             </div>
           ) : (
-            trainees.map((trainee) => {
+            filteredTrainees.map((trainee) => {
               const attendanceStatus = getAttendanceStatus(trainee.id);
               
               return (
@@ -499,12 +704,21 @@ export const AttendanceManager: React.FC = () => {
               <h2 className="text-xl font-bold text-white">
                 {format(selectedDayDate, 'EEEE, MMMM d, yyyy')}
               </h2>
-              <button
-                onClick={() => setShowDayModal(false)}
-                className="p-1 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => exportDayAttendance(selectedDayDate, selectedDayRecords)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  title="Export attendance"
+                >
+                  <Download className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  onClick={() => setShowDayModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
@@ -531,7 +745,9 @@ export const AttendanceManager: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    {selectedDayRecords.map((record) => (
+                    {selectedDayRecords
+                      .sort((a, b) => a.traineeName.localeCompare(b.traineeName))
+                      .map((record) => (
                       <div
                         key={record.id}
                         className={`flex items-center justify-between p-3 rounded-lg ${
