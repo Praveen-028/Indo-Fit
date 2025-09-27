@@ -285,7 +285,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                 {/* NEW: Serial Number Badge */}
                 <div className="absolute -top-2 -left-2">
                   <div className="bg-yellow-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold shadow-lg">
-                    #{index + 1}
+                    #{1 + 1}
                   </div>
                 </div>
 
