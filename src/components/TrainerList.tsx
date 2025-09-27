@@ -1,16 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Plus, 
-  Search, 
-  Phone, 
-  Archive, 
-  Trash2, 
-  MoreVertical, 
-  FileText, 
-  RotateCcw,
-  Edit,
-  UserCheck
-} from 'lucide-react';
+import { Plus, Search, Phone, Archive, Trash2, MoreVertical, FileText, RotateCcw, CreditCard as Edit, UserCheck } from 'lucide-react';
 
 import { useTrainers } from '../hooks/useTrainers';
 import { TrainerForm } from './TrainerForm';
