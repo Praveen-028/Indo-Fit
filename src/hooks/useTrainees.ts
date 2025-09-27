@@ -6,20 +6,33 @@ import {
   updateDoc, 
   deleteDoc, 
   doc,
-  writeBatch, // <-- NEW: Import for atomic operations
-  getDocs,    // <-- NEW: Import for querying related documents
-  query,      // <-- NEW: Import for creating queries
-  where       // <-- NEW: Import for filtering queries
+  writeBatch,
+  getDocs,
+  query,
+  where
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Trainee } from '../types';
 
-// Define a type for Plans to use in getRelatedPlansQuery
 type PlanCollection = 'workoutPlans' | 'dietPlans';
 
 export const useTrainees = () => {
-  const [allTrainees, setAllTrainees] = useState<Trainee[]>([]); // Store all trainees
+  const [allTrainees, setAllTrainees] = useState<Trainee[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Utility function to clean data before saving to Firestore
+  const cleanDataForFirestore = (data: any) => {
+    const cleaned = { ...data };
+    
+    // Remove undefined values and replace with null or remove the field entirely
+    Object.keys(cleaned).forEach(key => {
+      if (cleaned[key] === undefined) {
+        delete cleaned[key]; // Remove undefined fields entirely
+      }
+    });
+    
+    return cleaned;
+  };
 
   // Utility function to query related plans
   const getRelatedPlansQuery = async (traineeId: string, batch: ReturnType<typeof writeBatch>, action: 'archive' | 'unarchive' | 'delete') => {
@@ -27,32 +40,27 @@ export const useTrainees = () => {
     const updateField = action === 'archive' ? { isActive: false } : { isActive: true };
 
     for (const collectionName of planCollections) {
-      // Create a query to find all plans belonging to the trainee
       const q = query(collection(db, collectionName), where('traineeId', '==', traineeId));
       const snapshot = await getDocs(q);
 
       snapshot.docs.forEach((planDoc) => {
         if (action === 'delete') {
-          // If deleting the trainee, delete the plans too
           batch.delete(planDoc.ref);
         } else {
-          // If archiving/unarchiving, update the plans' status
           batch.update(planDoc.ref, updateField);
         }
       });
     }
   };
 
-  // NEW: Function to check and auto-archive expired memberships
   const checkAndArchiveExpiredMemberships = async () => {
     try {
       const now = new Date();
       const batch = writeBatch(db);
       let hasUpdates = false;
 
-      // Find active trainees with expired memberships (more than 1 month past expiry)
       const expiredTrainees = allTrainees.filter(trainee => {
-        if (trainee.isActive === false) return false; // Skip already archived
+        if (trainee.isActive === false) return false;
         
         const membershipEndDate = new Date(trainee.membershipEndDate);
         const oneMonthAfterExpiry = new Date(membershipEndDate);
@@ -66,21 +74,18 @@ export const useTrainees = () => {
       for (const trainee of expiredTrainees) {
         const traineeRef = doc(db, 'trainees', trainee.id);
         
-        // Archive the trainee
         batch.update(traineeRef, { 
           isActive: false,
           autoArchivedAt: new Date(),
           autoArchivedReason: 'Membership expired for more than 1 month'
         });
         
-        // Archive related plans
         await getRelatedPlansQuery(trainee.id, batch, 'archive');
         hasUpdates = true;
 
         console.log(`Auto-archiving trainee: ${trainee.name} (ID: ${trainee.id})`);
       }
 
-      // Commit batch if there are updates
       if (hasUpdates) {
         await batch.commit();
         console.log(`Auto-archived ${expiredTrainees.length} expired memberships`);
@@ -91,31 +96,26 @@ export const useTrainees = () => {
     }
   };
 
-  // NEW: Function to run periodic checks
   const startPeriodicExpiryCheck = () => {
-    // Run immediately when hook initializes
     checkAndArchiveExpiredMemberships();
 
-    // Set up interval to run every 24 hours (86400000 ms)
     const intervalId = setInterval(() => {
       checkAndArchiveExpiredMemberships();
-    }, 24 * 60 * 60 * 1000); // 24 hours
+    }, 24 * 60 * 60 * 1000);
 
     return intervalId;
   };
 
   useEffect(() => {
-    // Fetches ALL trainees (active and archived)
     const q = collection(db, 'trainees'); 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const traineesData = snapshot.docs.map(doc => ({
         id: doc.id,
-        // Assuming your Firestore documents have all necessary fields, including 'isActive'
         ...doc.data(), 
         membershipStartDate: doc.data().membershipStartDate?.toDate(),
         membershipEndDate: doc.data().membershipEndDate?.toDate(),
         createdAt: doc.data().createdAt?.toDate(),
-        autoArchivedAt: doc.data().autoArchivedAt?.toDate(), // NEW: Handle auto-archive timestamp
+        autoArchivedAt: doc.data().autoArchivedAt?.toDate(),
       })) as Trainee[];
       
       setAllTrainees(traineesData); 
@@ -125,57 +125,81 @@ export const useTrainees = () => {
     return () => unsubscribe();
   }, []);
 
-  // NEW: Start periodic expiry check when trainees data is loaded
   useEffect(() => {
     if (!loading && allTrainees.length > 0) {
       const intervalId = startPeriodicExpiryCheck();
-      
-      // Cleanup interval on unmount
       return () => clearInterval(intervalId);
     }
   }, [loading, allTrainees.length]);
   
-  // Derived state: Filter active and archived members
   const activeTrainees = allTrainees.filter(t => t.isActive !== false); 
   const archivedTrainees = allTrainees.filter(t => t.isActive === false);
 
+  // FIXED: Clean data before saving to Firestore
   const addTrainee = async (traineeData: Omit<Trainee, 'id'>) => {
     try {
-      // Ensure new trainees are marked as active by default
-      await addDoc(collection(db, 'trainees'), { ...traineeData, isActive: true, createdAt: new Date() });
+      // Prepare the data with defaults and clean undefined values
+      const dataToSave = {
+        ...traineeData,
+        isActive: true,
+        createdAt: new Date(),
+        // Only include assignedTrainerId if specialTraining is enabled and trainerId exists
+        ...(traineeData.specialTraining && traineeData.assignedTrainerId ? 
+          { assignedTrainerId: traineeData.assignedTrainerId } : 
+          {}
+        )
+      };
+
+      // Remove any undefined values
+      const cleanedData = cleanDataForFirestore(dataToSave);
+      
+      console.log('Saving trainee data:', cleanedData); // Debug log
+      
+      await addDoc(collection(db, 'trainees'), cleanedData);
     } catch (error) {
       console.error('Error adding trainee:', error);
       throw error;
     }
   };
 
+  // FIXED: Clean data before updating in Firestore
   const updateTrainee = async (traineeId: string, updates: Partial<Trainee>) => {
     try {
-      await updateDoc(doc(db, 'trainees', traineeId), updates);
+      // Handle assignedTrainerId based on specialTraining
+      const updatesToSave = { ...updates };
+      
+      // If specialTraining is being disabled, remove assignedTrainerId
+      if (updates.specialTraining === false) {
+        updatesToSave.assignedTrainerId = null; // Use null instead of undefined
+      }
+      // If specialTraining is enabled but no trainer assigned, don't include the field
+      else if (updates.specialTraining === true && !updates.assignedTrainerId) {
+        delete updatesToSave.assignedTrainerId;
+      }
+
+      // Clean the data
+      const cleanedUpdates = cleanDataForFirestore(updatesToSave);
+      
+      console.log('Updating trainee with data:', cleanedUpdates); // Debug log
+      
+      await updateDoc(doc(db, 'trainees', traineeId), cleanedUpdates);
     } catch (error) {
       console.error('Error updating trainee:', error);
       throw error;
     }
   };
 
-  // ------------------------------------------------------------------
-  // UPDATED: ARCHIVE TRAINEE (Archives Trainee, WorkoutPlans, and DietPlans)
-  // ------------------------------------------------------------------
   const archiveTrainee = async (traineeId: string) => {
     const batch = writeBatch(db);
     const traineeRef = doc(db, 'trainees', traineeId);
     
     try {
-      // 1. Archive the Trainee document (manual archive)
       batch.update(traineeRef, { 
         isActive: false,
-        manualArchivedAt: new Date() // Mark as manually archived
+        manualArchivedAt: new Date()
       });
       
-      // 2. Archive related Plans and add to the same batch
       await getRelatedPlansQuery(traineeId, batch, 'archive');
-
-      // 3. Commit the batch: all or nothing
       await batch.commit();
 
     } catch (error) {
@@ -184,28 +208,20 @@ export const useTrainees = () => {
     }
   };
 
-  // ------------------------------------------------------------------
-  // UPDATED: UNARCHIVE TRAINEE (Unarchives Trainee, WorkoutPlans, and DietPlans)
-  // ------------------------------------------------------------------
   const unarchiveTrainee = async (traineeId: string) => {
     const batch = writeBatch(db);
     const traineeRef = doc(db, 'trainees', traineeId);
 
     try {
-      // 1. Unarchive the Trainee document
       batch.update(traineeRef, { 
         isActive: true,
         unarchivedAt: new Date(),
-        // Clear archive timestamps when unarchiving
         autoArchivedAt: null,
         autoArchivedReason: null,
         manualArchivedAt: null
       });
       
-      // 2. Unarchive related Plans and add to the same batch
       await getRelatedPlansQuery(traineeId, batch, 'unarchive');
-
-      // 3. Commit the batch: all or nothing
       await batch.commit();
 
     } catch (error) {
@@ -214,9 +230,6 @@ export const useTrainees = () => {
     }
   };
 
-  // ------------------------------------------------------------------
-  // UPDATED: DELETE TRAINEE (Deletes Trainee, WorkoutPlans, and DietPlans)
-  // ------------------------------------------------------------------
   const deleteTrainee = async (traineeId: string) => {
     const batch = writeBatch(db);
     const traineeRef = doc(db, 'trainees', traineeId);
@@ -227,14 +240,8 @@ export const useTrainees = () => {
     }
 
     try {
-      // 1. Delete the Trainee document
       batch.delete(traineeRef);
-      
-      // 2. Delete related Plans and add to the same batch
       await getRelatedPlansQuery(traineeId, batch, 'delete');
-      // NOTE: Attendance collection is intentionally skipped by the utility function
-
-      // 3. Commit the batch: all or nothing
       await batch.commit();
 
     } catch (error) {
@@ -243,20 +250,19 @@ export const useTrainees = () => {
     }
   };
 
-  // NEW: Manual function to trigger expiry check (useful for testing or manual triggers)
   const manualExpiryCheck = async () => {
     await checkAndArchiveExpiredMemberships();
   };
 
   return {
-    trainees: activeTrainees, // Active list for main view
-    archivedTrainees,          // Archived list for archived view
+    trainees: activeTrainees,
+    archivedTrainees,
     loading,
     addTrainee,
-    updateTrainee,            // Make sure this is exported
+    updateTrainee,
     archiveTrainee,
-    unarchiveTrainee,          // Exposed unarchive function
+    unarchiveTrainee,
     deleteTrainee,
-    manualExpiryCheck,        // NEW: Expose manual expiry check function
+    manualExpiryCheck,
   };
 };
