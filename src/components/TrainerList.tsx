@@ -309,11 +309,7 @@ Welcome to the INDOFIT GYM family! 💪
 
               {/* Details */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <span className="text-green-200">Specialization:</span>
-                  <span className="text-ivory-100 font-medium">{trainer.specialization}</span>
-                </div>
-                
+                                
                 <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-green-200">Experience:</span>
                   <span className="text-ivory-100 font-medium">{trainer.experience} years</span>
