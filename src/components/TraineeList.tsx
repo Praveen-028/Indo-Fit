@@ -122,7 +122,7 @@ export const TraineeList: React.FC = () => {
       // Create personalized motivational message
       const message = `Hi ${trainee.name}! 👋
 
-${randomQuote}
+Winners not born; They are made💪
 
 🏋️‍♂️ *Why come back to INDOFIT?*
 ✅ State-of-the-art equipment
