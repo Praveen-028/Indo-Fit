@@ -201,7 +201,7 @@ Your transformation journey starts here, and we'll be with you at every step �
 Thank you for choosing *INDOFIT GYM*! 🙏  
 Together, let's achieve your fitness goals and push past limits! 🚀💯
 
-*Contact us:* [Your gym contact details]`;
+*Contact us:* 6383328828`;
 
       
       // Create WhatsApp URL with the message
