@@ -15,25 +15,31 @@ export const NotificationPanel: React.FC = () => {
     }
 
     const greeting = customerName.trim() ? `Hai ${customerName.trim()}` : 'Hai';
-    const message = `${greeting} This is kesavan from indo fit fitness studio on 26/09/2025 You have enquired our fitness studio to enroll your fitness journey
+    const message = `${greeting} 🌟 Hello! This is Kesavan from INDO FIT Fitness Studio – Team Physique Lab 7.0 💪🔥
 
-INDO FIT Fitness Studio and gym Team of Physique Lab7.0
+On 26/09/2025, you had enquired with us about starting your fitness journey, and I’d love to share what we offer to help you reach your goals 🚀
 
-What are the service we provide 
-1) strength training 
-2) sports conditioning 
-3) fat loss/ weight loss program 
-4) fitness 
-5) stability programs 
-6) injury prevention 
-7) weekly once physiotherapist visit 
-8) weekly once outdoor and sports activities 
-9) pre booking ice bath 500rs 
-10) we have certified trainer in our team 
+🏋️ Our Services
 
-Our fitness studio is located in zudio back side 
+✅ Strength Training
+✅ Sports Conditioning
+✅ Fat Loss / Weight Loss Programs
+✅ General Fitness & Wellness
+✅ Stability Programs
+✅ Injury Prevention
+✅ Weekly Physiotherapist Visit
+✅ Weekly Outdoor & Sports Activities
+✅ Pre-book Ice Bath 🧊 (₹500)
+✅ Certified & Experienced Trainers
 
-Thank you sir Feel free to call or visit our fitness studio`;
+📍 Location: Behind Zudio
+📞 Feel free to call me or visit anytime to know more or to kickstart your transformation journey!
+
+🙏 Thank you for your interest.
+Let’s achieve your fitness goals together with INDO FIT Fitness Studio 💯🔥
+
+— V.K. KESAVAN 
+FITNESS AND LIFESTYLE COACH`;
 
     // Open WhatsApp with the message
     const encodedMessage = encodeURIComponent(message);
