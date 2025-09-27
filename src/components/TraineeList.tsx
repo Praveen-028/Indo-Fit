@@ -99,6 +99,9 @@ export const TraineeList: React.FC = () => {
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 
+🎉 *Welcome on board to INDOFIT!*  
+Your transformation journey starts here, and we’ll be with you at every step 💪🔥
+
 📋 *Invoice Details:*
 • Invoice No: ${invoiceNo}
 • Date: ${new Date().toLocaleDateString()}
@@ -123,10 +126,11 @@ export const TraineeList: React.FC = () => {
 
 ✅ *Payment Status: PAID*
 
-Thank you for choosing INDOFIT GYM! 🙏
-Keep pushing your limits! 💪
+Thank you for choosing *INDOFIT GYM*! 🙏  
+Together, let’s achieve your fitness goals and push past limits! 🚀💯
 
 *Contact us:* [Your gym contact details]`;
+
       
       // Create WhatsApp URL with the message
       const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
