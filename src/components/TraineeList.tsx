@@ -280,8 +280,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
             return (
               <div
                 key={trainee.id}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group"
-              >
+                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group">
                 {/* NEW: Serial Number Badge */}
 
                 {/* Header */}
