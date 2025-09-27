@@ -32,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children }) => 
                 <Dumbbell className="w-6 h-6 text-green-900" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-ivory-100">INDO FIT</h1>
+                <h1 className="text-xl font-bold text-ivory-100">INDO FIT Fitness Studio & Gym</h1>
                 <p className="text-sm text-green-200">Physique LAB7.0</p>
               </div>
             </div>
