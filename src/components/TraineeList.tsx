@@ -139,7 +139,8 @@ Reply to this message or call us to discuss your comeback plan!
 Let's make your fitness goals a reality! 💪
 
 *Team INDOFIT Fitness Studio and Gym - Physique LAB7.0*
-📍 Location: Behind Zudio`;
+📍 Location: Behind Zudio
+Contact us : 6383328828`;
 
       // Create WhatsApp URL with the message
       const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
