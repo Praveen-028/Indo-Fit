@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Dumbbell, UtensilsCrossed, Calendar, Bell } from 'lucide-react';
+import { Users, Dumbbell, UtensilsCrossed, Calendar, Bell, UserCheck, ClipboardCheck } from 'lucide-react';
 
 interface LayoutProps {
   activeTab: string;
@@ -14,6 +14,8 @@ const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children }) => 
     { id: 'diet', label: 'Diet', icon: UtensilsCrossed },
     { id: 'attendance', label: 'Attendance', icon: Calendar },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'trainers', label: 'Trainers', icon: UserCheck },
+    { id: 'trainer-attendance', label: 'Trainer Attendance', icon: ClipboardCheck },
   ];
 
   return (

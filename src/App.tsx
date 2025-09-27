@@ -5,6 +5,8 @@ import { NotificationPanel } from './components/NotificationPanel';
 import { AttendanceManager } from './components/AttendanceManager';
 import { WorkoutPlanner } from './components/WorkoutPlanner';
 import { DietPlanner } from './components/DietPlanner';
+import { TrainerList } from './components/TrainerList';
+import { TrainerAttendanceManager } from './components/TrainerAttendanceManager';
 
 function App() {
   const [activeTab, setActiveTab] = useState('trainees');
@@ -36,6 +38,10 @@ function App() {
         return <WorkoutPlanner />;
       case 'diet':
         return <DietPlanner />;
+      case 'trainers':
+        return <TrainerList />;
+      case 'trainer-attendance':
+        return <TrainerAttendanceManager />;
       default:
         return <TraineeList />;
     }

@@ -84,3 +84,28 @@ export interface ExpiringMembership {
   expiryDate: Date;
   daysUntilExpiry: number;
 }
+
+export interface Trainer {
+  id: string;
+  uniqueId: string; // Generated from mobile number
+  name: string;
+  phoneNumber: string;
+  email?: string;
+  specialization: 'Personal Training' | 'Group Classes' | 'Nutrition' | 'Physiotherapy' | 'General';
+  experience: number; // years
+  salary: number;
+  joiningDate: Date;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export interface TrainerAttendanceRecord {
+  id: string;
+  trainerId: string;
+  trainerName: string;
+  date: Date;
+  present: boolean;
+  checkInTime?: string;
+  checkOutTime?: string;
+  notes?: string;
+}
