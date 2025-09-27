@@ -17,19 +17,9 @@ import { Trainee } from '../types';
 // Define a type for Plans to use in getRelatedPlansQuery
 type PlanCollection = 'workoutPlans' | 'dietPlans';
 
-// NEW: Auto-archive result interface
-interface AutoArchiveResult {
-  archivedCount: number;
-  failedCount: number;
-  archivedTrainees: string[];
-  errors: string[];
-}
-
 export const useTrainees = () => {
   const [allTrainees, setAllTrainees] = useState<Trainee[]>([]); // Store all trainees
   const [loading, setLoading] = useState(true);
-  // NEW: State for auto-archive results
-  const [autoArchiveResult, setAutoArchiveResult] = useState<AutoArchiveResult | null>(null);
 
   // Utility function to query related plans
   const getRelatedPlansQuery = async (traineeId: string, batch: ReturnType<typeof writeBatch>, action: 'archive' | 'unarchive' | 'delete') => {
@@ -53,81 +43,6 @@ export const useTrainees = () => {
     }
   };
 
-  // NEW: Auto-archive utility functions
-  const shouldAutoArchive = (trainee: Trainee): boolean => {
-    const now = new Date();
-    const membershipEndDate = new Date(trainee.membershipEndDate);
-    
-    // Calculate the difference in milliseconds
-    const diffTime = now.getTime() - membershipEndDate.getTime();
-    
-    // Convert to days
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Auto-archive if membership expired more than 30 days ago
-    return diffDays > 30;
-  };
-
-  const getDaysSinceExpiry = (trainee: Trainee): number => {
-    const now = new Date();
-    const membershipEndDate = new Date(trainee.membershipEndDate);
-    const diffTime = now.getTime() - membershipEndDate.getTime();
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  };
-
-  // NEW: Get trainees that are expired but not yet eligible for auto-archiving
-  const getTraineesNearAutoArchive = () => {
-    return activeTrainees.filter(trainee => {
-      const daysSinceExpiry = getDaysSinceExpiry(trainee);
-      return daysSinceExpiry > 0 && daysSinceExpiry <= 30; // Expired but not yet auto-archived
-    });
-  };
-
-  // NEW: Perform auto-archive of eligible trainees
-  const performAutoArchive = async (): Promise<AutoArchiveResult> => {
-    const expiredTrainees = activeTrainees.filter(shouldAutoArchive);
-    
-    if (expiredTrainees.length === 0) {
-      return {
-        archivedCount: 0,
-        failedCount: 0,
-        archivedTrainees: [],
-        errors: []
-      };
-    }
-
-    console.log(`Auto-archiving ${expiredTrainees.length} expired memberships...`);
-    
-    let archivedCount = 0;
-    let failedCount = 0;
-    const archivedTraineeNames: string[] = [];
-    const errors: string[] = [];
-
-    // Process each expired trainee
-    for (const trainee of expiredTrainees) {
-      try {
-        await archiveTrainee(trainee.id);
-        archivedCount++;
-        archivedTraineeNames.push(trainee.name);
-        console.log(`Auto-archived: ${trainee.name} (expired on ${new Date(trainee.membershipEndDate).toLocaleDateString()})`);
-      } catch (error) {
-        failedCount++;
-        const errorMessage = `Failed to auto-archive ${trainee.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        errors.push(errorMessage);
-        console.error(errorMessage);
-      }
-    }
-
-    const result: AutoArchiveResult = {
-      archivedCount,
-      failedCount,
-      archivedTrainees: archivedTraineeNames,
-      errors
-    };
-
-    return result;
-  };
-
   useEffect(() => {
     // Fetches ALL trainees (active and archived)
     const q = collection(db, 'trainees'); 
@@ -147,31 +62,11 @@ export const useTrainees = () => {
 
     return () => unsubscribe();
   }, []);
-
-  // NEW: Auto-archive effect - runs when active trainees data changes
-  useEffect(() => {
-    const runAutoArchive = async () => {
-      if (!loading && activeTrainees.length > 0) {
-        try {
-          const result = await performAutoArchive();
-          
-          if (result.archivedCount > 0) {
-            setAutoArchiveResult(result);
-            // Clear the notification after 5 seconds
-            setTimeout(() => setAutoArchiveResult(null), 5000);
-          }
-        } catch (error) {
-          console.error('Auto-archive process failed:', error);
-        }
-      }
-    };
-
-    runAutoArchive();
-  }, [loading, activeTrainees.length]); // Run when loading finishes and when active trainees count changes
   
   // Derived state: Filter active and archived members
   const activeTrainees = allTrainees.filter(t => t.isActive !== false); 
   const archivedTrainees = allTrainees.filter(t => t.isActive === false);
+
 
   const addTrainee = async (traineeData: Omit<Trainee, 'id'>) => {
     try {
@@ -276,11 +171,5 @@ export const useTrainees = () => {
     archiveTrainee,
     unarchiveTrainee,          // Exposed unarchive function
     deleteTrainee,
-    // NEW: Auto-archive related exports
-    autoArchiveResult,
-    getTraineesNearAutoArchive,
-    performAutoArchive,
-    shouldAutoArchive,
-    getDaysSinceExpiry,
   };
 };
