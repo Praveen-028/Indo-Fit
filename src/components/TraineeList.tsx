@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -7,41 +7,43 @@ import {
   Trash2, 
   MoreVertical, 
   FileText, 
-  RotateCcw, // Used for Unarchive
-  Edit, // NEW: Added Edit icon
-  User, // NEW: Added for trainer display
-  Hash, // NEW: Added for serial number
-  MessageCircle, // NEW: Added for motivational quotes
-  Heart // NEW: Added for motivation icon
+  RotateCcw,
+  Edit,
+  User,
+  Hash,
+  MessageCircle,
+  Heart,
+  AlertCircle
 } from 'lucide-react';
 
 import { useTrainees } from '../hooks/useTrainees';
-import { useTrainers } from '../hooks/useTrainers'; // NEW: Import trainers hook
+import { useTrainers } from '../hooks/useTrainers';
 import { TraineeForm } from './TraineeForm';
-import { Trainee } from '../types'; // NEW: Import Trainee type
+import { Trainee } from '../types';
 
-// Type for view mode
 type TraineeView = 'active' | 'archived';
 
 export const TraineeList: React.FC = () => {
   const { 
-    trainees, // Now only active trainees
-    archivedTrainees, // NEW: Archived list
+    trainees,
+    archivedTrainees,
     loading, 
     archiveTrainee, 
-    unarchiveTrainee, // NEW: Unarchive function
+    unarchiveTrainee,
     deleteTrainee 
   } = useTrainees();
 
-  const { trainers } = useTrainers(); // NEW: Get trainers data
+  const { trainers } = useTrainers();
 
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<TraineeView>('active'); // State for view mode
-  const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null); // NEW: State for editing trainee
+  const [currentView, setCurrentView] = useState<TraineeView>('active');
+  const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null);
+  const [operationLoading, setOperationLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // NEW: Motivational quotes array
+  // Motivational quotes array
   const motivationalQuotes = [
     "💪 Your fitness journey is waiting for you! Every day is a new chance to become stronger. Come back to INDOFIT and let's continue your transformation! 🔥",
     "🌟 Champions are made when nobody's watching. Your gym family at INDOFIT misses you! Ready to get back to your goals? 💯",
@@ -53,73 +55,121 @@ export const TraineeList: React.FC = () => {
     "🎯 Your goals are still waiting for you! Let's turn your 'I wish' into 'I will' and your 'Someday' into 'Today' at INDOFIT! 🚀"
   ];
 
-  // Determine which list to filter based on the current view
-  const listToFilter = currentView === 'active' ? trainees : archivedTrainees;
-
-  // Filter trainees based on search term
-  const filteredTrainees = listToFilter.filter(trainee =>
-    trainee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trainee.phoneNumber.includes(searchTerm)
-  );
-
-  // NEW: Helper function to get trainer name by ID
-  const getTrainerName = (trainerId: string) => {
+  // Memoized trainer name lookup
+  const getTrainerName = useCallback((trainerId: string) => {
     const trainer = trainers.find(t => t.id === trainerId);
     return trainer ? trainer.name : 'Unknown Trainer';
+  }, [trainers]);
+
+  // Memoized filtered trainees
+  const { listToFilter, filteredTrainees } = useMemo(() => {
+    const listToFilter = currentView === 'active' ? trainees : archivedTrainees;
+    const filtered = listToFilter.filter(trainee =>
+      trainee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trainee.phoneNumber.includes(searchTerm)
+    );
+    return { listToFilter, filteredTrainees: filtered };
+  }, [currentView, trainees, archivedTrainees, searchTerm]);
+
+  // Click outside handler for dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('[data-dropdown]')) {
+        setActiveDropdown(null);
+      }
+    };
+
+    if (activeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activeDropdown]);
+
+  // Error auto-clear
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  const handleOperationError = (operation: string, error: any) => {
+    console.error(`Error ${operation}:`, error);
+    setError(`Failed to ${operation}. Please try again.`);
+    setOperationLoading(null);
   };
 
   const handleArchive = async (traineeId: string) => {
+    setOperationLoading(`archive-${traineeId}`);
     try {
       await archiveTrainee(traineeId);
       setActiveDropdown(null);
     } catch (error) {
-      console.error('Error archiving trainee:', error);
+      handleOperationError('archive trainee', error);
+    } finally {
+      setOperationLoading(null);
     }
   };
 
-  // NEW: Handler for Unarchive
   const handleUnarchive = async (traineeId: string) => {
+    setOperationLoading(`unarchive-${traineeId}`);
     try {
       await unarchiveTrainee(traineeId);
       setActiveDropdown(null);
-      // Optional: switch back to active view after unarchive
-      // setCurrentView('active');
     } catch (error) {
-      console.error('Error unarchiving trainee:', error);
+      handleOperationError('unarchive trainee', error);
+    } finally {
+      setOperationLoading(null);
     }
   };
 
   const handleDelete = async (traineeId: string) => {
-    if (window.confirm('Are you sure you want to permanently delete this trainee?')) {
-      try {
-        await deleteTrainee(traineeId);
-        setActiveDropdown(null);
-      } catch (error) {
-        console.error('Error deleting trainee:', error);
-      }
+    if (!window.confirm('Are you sure you want to permanently delete this trainee?')) {
+      return;
+    }
+    
+    setOperationLoading(`delete-${traineeId}`);
+    try {
+      await deleteTrainee(traineeId);
+      setActiveDropdown(null);
+    } catch (error) {
+      handleOperationError('delete trainee', error);
+    } finally {
+      setOperationLoading(null);
     }
   };
 
-  // NEW: Handler for Edit
   const handleEdit = (trainee: Trainee) => {
     setEditingTrainee(trainee);
     setShowForm(true);
     setActiveDropdown(null);
   };
 
-  // NEW: Handler for closing form (resets editing state)
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingTrainee(null);
   };
 
-  // NEW: Handler for sending motivational quote
+  // Improved phone number formatting
+  const formatPhoneForWhatsApp = (phoneNumber: string) => {
+    const cleaned = phoneNumber.replace(/[^\d]/g, '');
+    // Handle various country codes, defaulting to India
+    if (cleaned.length === 10) {
+      return `91${cleaned}`;
+    } else if (cleaned.startsWith('91') && cleaned.length === 12) {
+      return cleaned;
+    } else if (cleaned.startsWith('0') && cleaned.length === 11) {
+      return `91${cleaned.slice(1)}`;
+    }
+    return cleaned.startsWith('91') ? cleaned : `91${cleaned}`;
+  };
+
   const handleSendMotivationalQuote = async (trainee: Trainee) => {
+    setOperationLoading(`motivation-${trainee.id}`);
     try {
-      // Get a random motivational quote
       const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
       
-      // Create personalized motivational message
       const message = `Hi ${trainee.name}! 👋
 
 Winners not born; They are made💪
@@ -142,32 +192,25 @@ Let's make your fitness goals a reality! 💪
 📍 Location: Behind Zudio
 Contact us : 6383328828`;
 
-      // Create WhatsApp URL with the message
-      const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
-      const whatsappNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
+      const whatsappNumber = formatPhoneForWhatsApp(trainee.phoneNumber);
       const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
       
-      // Open WhatsApp in a new tab
       window.open(whatsappURL, '_blank');
-      
       setActiveDropdown(null);
       
-      // Show success message
-      alert(`Motivational message ready! WhatsApp will open to send encouragement to ${trainee.name} 💪`);
-      
     } catch (error) {
-      console.error('Error sending motivational quote:', error);
-      alert('Error preparing motivational message. Please try again.');
+      handleOperationError('send motivational message', error);
+    } finally {
+      setOperationLoading(null);
     }
   };
 
-  const handleGenerateInvoice = async (trainee: any) => {
+  const handleGenerateInvoice = async (trainee: Trainee) => {
+    setOperationLoading(`invoice-${trainee.id}`);
     try {
-      // Generate invoice number
       const invoiceNo = `INV-${trainee.uniqueId}-${Date.now().toString().slice(-6)}`;
       
-      // Create comprehensive WhatsApp invoice message
-      const message = `🧾 *INVOICE - INDOFIT GYM*
+      const message = `🧾 *INVOICE - INDOFIT Fitness Studio & Gym*
 *Physique LAB7.0*
 
 ━━━━━━━━━━━━━━━━━━━━━━━
@@ -206,23 +249,16 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
 
 *Contact us:* 6383328828`;
 
-      
-      // Create WhatsApp URL with the message
-      const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
-      const whatsappNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
+      const whatsappNumber = formatPhoneForWhatsApp(trainee.phoneNumber);
       const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
       
-      // Open WhatsApp in a new tab
       window.open(whatsappURL, '_blank');
-      
       setActiveDropdown(null);
       
-      // Show success message
-      alert(`Invoice details ready! WhatsApp will open to send complete invoice information to ${trainee.name}.`);
-      
     } catch (error) {
-      console.error('Error generating invoice:', error);
-      alert('Error generating invoice. Please try again.');
+      handleOperationError('generate invoice', error);
+    } finally {
+      setOperationLoading(null);
     }
   };
 
@@ -249,6 +285,20 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-2">
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+          <p className="text-red-700 text-sm">{error}</p>
+          <button 
+            onClick={() => setError(null)}
+            className="ml-auto text-red-500 hover:text-red-700"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -264,7 +314,6 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         
         <button
           onClick={() => setShowForm(true)}
-          // Disable Add button in archived view
           className={`flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg transition-all shadow-lg text-sm sm:text-base 
             ${currentView === 'archived' ? 'opacity-50 cursor-not-allowed' : 'hover:from-yellow-600 hover:to-yellow-700'}`}
           disabled={currentView === 'archived'}
@@ -274,9 +323,8 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         </button>
       </div>
 
-      {/* NEW: View Toggle and Search */}
+      {/* View Toggle and Search */}
       <div className="flex flex-col md:flex-row gap-4">
-        {/* View Toggle Buttons */}
         <div className="flex space-x-2 p-1 bg-white/10 rounded-lg border border-white/20 flex-shrink-0">
           <button
             onClick={() => {
@@ -306,7 +354,6 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
           </button>
         </div>
 
-        {/* Search Input */}
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
           <input
@@ -338,15 +385,15 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredTrainees.map((trainee, index) => {
+          {filteredTrainees.map((trainee) => {
             const expiryStatus = getExpiryStatus(new Date(trainee.membershipEndDate));
+            const isOperationLoading = operationLoading?.includes(trainee.id);
             
             return (
               <div
                 key={trainee.id}
                 className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group">
-                {/* NEW: Serial Number Badge */}
-
+                
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4 relative">
                   <div className="flex-1">
@@ -357,17 +404,17 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                       <Phone className="w-4 h-4" />
                       <span>{trainee.phoneNumber}</span>
                     </div>
-                    {/* NEW: Member ID Display */}
                     <div className="flex items-center space-x-2 text-xs text-green-300 mt-1">
                       <Hash className="w-3 h-3" />
                       <span>{trainee.memberId || trainee.uniqueId}</span>
                     </div>
                   </div>
                   
-                  <div className="relative">
+                  <div className="relative" data-dropdown>
                     <button
                       onClick={() => setActiveDropdown(activeDropdown === trainee.id ? null : trainee.id)}
-                      className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
+                      disabled={isOperationLoading}
                     >
                       <MoreVertical className="w-4 h-4 text-ivory-200" />
                     </button>
@@ -375,7 +422,6 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                     {activeDropdown === trainee.id && (
                       <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[180px]">
                         
-                        {/* NEW: Edit Button */}
                         <button
                           onClick={() => handleEdit(trainee)}
                           className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
@@ -384,53 +430,53 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                           <span>Edit</span>
                         </button>
                         
-                        {/* Invoice */}
                         <button
                           onClick={() => handleGenerateInvoice(trainee)}
-                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                          disabled={operationLoading === `invoice-${trainee.id}`}
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                         >
                           <FileText className="w-4 h-4" />
-                          <span>Invoice</span>
+                          <span>{operationLoading === `invoice-${trainee.id}` ? 'Generating...' : 'Invoice'}</span>
                         </button>
                         
                         {currentView === 'active' ? (
-                          // Active View Actions
                           <button
                             onClick={() => handleArchive(trainee.id)}
-                            className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                            disabled={operationLoading === `archive-${trainee.id}`}
+                            className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                           >
                             <Archive className="w-4 h-4" />
-                            <span>Archive</span>
+                            <span>{operationLoading === `archive-${trainee.id}` ? 'Archiving...' : 'Archive'}</span>
                           </button>
                         ) : (
-                          // Archived View Actions
                           <>
-                            {/* NEW: Send Motivational Quote Button - Only for archived trainees */}
                             <button
                               onClick={() => handleSendMotivationalQuote(trainee)}
-                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-green-600 hover:bg-green-50"
+                              disabled={operationLoading === `motivation-${trainee.id}`}
+                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-green-600 hover:bg-green-50 disabled:opacity-50"
                             >
                               <Heart className="w-4 h-4" />
-                              <span>Send Motivation</span>
+                              <span>{operationLoading === `motivation-${trainee.id}` ? 'Sending...' : 'Send Motivation'}</span>
                             </button>
 
                             <button
                               onClick={() => handleUnarchive(trainee.id)}
-                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                              disabled={operationLoading === `unarchive-${trainee.id}`}
+                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                             >
                               <RotateCcw className="w-4 h-4" />
-                              <span>Unarchive</span>
+                              <span>{operationLoading === `unarchive-${trainee.id}` ? 'Unarchiving...' : 'Unarchive'}</span>
                             </button>
                           </>
                         )}
 
-                        {/* Delete */}
                         <button
                           onClick={() => handleDelete(trainee.id)}
-                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50"
+                          disabled={operationLoading === `delete-${trainee.id}`}
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
                         >
                           <Trash2 className="w-4 h-4" />
-                          <span>Delete</span>
+                          <span>{operationLoading === `delete-${trainee.id}` ? 'Deleting...' : 'Delete'}</span>
                         </button>
                       </div>
                     )}
@@ -469,7 +515,6 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                     </span>
                   </div>
 
-                  {/* NEW: Display Assigned Trainer if Special Training is enabled */}
                   {trainee.specialTraining && trainee.assignedTrainerId && (
                     <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-green-200 flex items-center space-x-1">
@@ -495,7 +540,6 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         </div>
       )}
 
-      {/* UPDATED: Pass editingTrainee to TraineeForm */}
       <TraineeForm 
         isOpen={showForm} 
         onClose={handleCloseForm}
