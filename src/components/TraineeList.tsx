@@ -7,44 +7,39 @@ import {
   Trash2, 
   MoreVertical, 
   FileText, 
-  RotateCcw,
-  Edit,
-  User,
-  Hash,
-  Heart,
-  Clock, // NEW: Added for auto-archive indicator
-  AlertTriangle // NEW: Added for warnings
+  RotateCcw, // Used for Unarchive
+  Edit, // NEW: Added Edit icon
+  User, // NEW: Added for trainer display
+  Hash, // NEW: Added for serial number
+  MessageCircle, // NEW: Added for motivational quotes
+  Heart // NEW: Added for motivation icon
 } from 'lucide-react';
 
 import { useTrainees } from '../hooks/useTrainees';
-import { useTrainers } from '../hooks/useTrainers';
+import { useTrainers } from '../hooks/useTrainers'; // NEW: Import trainers hook
 import { TraineeForm } from './TraineeForm';
-import { Trainee } from '../types';
+import { Trainee } from '../types'; // NEW: Import Trainee type
 
 // Type for view mode
 type TraineeView = 'active' | 'archived';
 
 export const TraineeList: React.FC = () => {
   const { 
-    trainees, // Active trainees
-    archivedTrainees, // Archived trainees
+    trainees, // Now only active trainees
+    archivedTrainees, // NEW: Archived list
     loading, 
     archiveTrainee, 
-    unarchiveTrainee,
-    deleteTrainee,
-    // NEW: Auto-archive related data
-    autoArchiveResult,
-    getTraineesNearAutoArchive,
-    getDaysSinceExpiry
+    unarchiveTrainee, // NEW: Unarchive function
+    deleteTrainee 
   } = useTrainees();
 
-  const { trainers } = useTrainers();
+  const { trainers } = useTrainers(); // NEW: Get trainers data
 
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<TraineeView>('active');
-  const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null);
+  const [currentView, setCurrentView] = useState<TraineeView>('active'); // State for view mode
+  const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null); // NEW: State for editing trainee
 
   // NEW: Motivational quotes array
   const motivationalQuotes = [
@@ -67,10 +62,7 @@ export const TraineeList: React.FC = () => {
     trainee.phoneNumber.includes(searchTerm)
   );
 
-  // NEW: Get trainees that will be auto-archived soon
-  const traineesNearAutoArchive = getTraineesNearAutoArchive();
-
-  // Helper function to get trainer name by ID
+  // NEW: Helper function to get trainer name by ID
   const getTrainerName = (trainerId: string) => {
     const trainer = trainers.find(t => t.id === trainerId);
     return trainer ? trainer.name : 'Unknown Trainer';
@@ -85,10 +77,13 @@ export const TraineeList: React.FC = () => {
     }
   };
 
+  // NEW: Handler for Unarchive
   const handleUnarchive = async (traineeId: string) => {
     try {
       await unarchiveTrainee(traineeId);
       setActiveDropdown(null);
+      // Optional: switch back to active view after unarchive
+      // setCurrentView('active');
     } catch (error) {
       console.error('Error unarchiving trainee:', error);
     }
@@ -105,17 +100,20 @@ export const TraineeList: React.FC = () => {
     }
   };
 
+  // NEW: Handler for Edit
   const handleEdit = (trainee: Trainee) => {
     setEditingTrainee(trainee);
     setShowForm(true);
     setActiveDropdown(null);
   };
 
+  // NEW: Handler for closing form (resets editing state)
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingTrainee(null);
   };
 
+  // NEW: Handler for sending motivational quote
   const handleSendMotivationalQuote = async (trainee: Trainee) => {
     try {
       // Get a random motivational quote
@@ -144,13 +142,16 @@ Let's make your fitness goals a reality! 💪
 [Your gym contact details]`;
 
       // Create WhatsApp URL with the message
-      const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, '');
+      const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
       const whatsappNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
       const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
       
+      // Open WhatsApp in a new tab
       window.open(whatsappURL, '_blank');
+      
       setActiveDropdown(null);
       
+      // Show success message
       alert(`Motivational message ready! WhatsApp will open to send encouragement to ${trainee.name} 💪`);
       
     } catch (error) {
@@ -161,8 +162,10 @@ Let's make your fitness goals a reality! 💪
 
   const handleGenerateInvoice = async (trainee: any) => {
     try {
+      // Generate invoice number
       const invoiceNo = `INV-${trainee.uniqueId}-${Date.now().toString().slice(-6)}`;
       
+      // Create comprehensive WhatsApp invoice message
       const message = `🧾 *INVOICE - INDOFIT GYM*
 *Physique LAB7.0*
 
@@ -200,13 +203,18 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
 
 *Contact us:* [Your gym contact details]`;
 
-      const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, '');
+      
+      // Create WhatsApp URL with the message
+      const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
       const whatsappNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
       const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
       
+      // Open WhatsApp in a new tab
       window.open(whatsappURL, '_blank');
+      
       setActiveDropdown(null);
       
+      // Show success message
       alert(`Invoice details ready! WhatsApp will open to send complete invoice information to ${trainee.name}.`);
       
     } catch (error) {
@@ -220,16 +228,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
     const diffTime = endDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) {
-      const daysSinceExpiry = Math.abs(diffDays);
-      if (daysSinceExpiry > 30) {
-        return { status: 'auto-archived', color: 'bg-gray-100 text-gray-800', text: 'Auto-archived' };
-      } else if (daysSinceExpiry > 7) {
-        return { status: 'long-expired', color: 'bg-red-100 text-red-800', text: `Expired ${daysSinceExpiry} days ago` };
-      } else {
-        return { status: 'expired', color: 'bg-red-100 text-red-800', text: `Expired ${daysSinceExpiry} days ago` };
-      }
-    }
+    if (diffDays < 0) return { status: 'expired', color: 'bg-red-100 text-red-800', text: 'Expired' };
     if (diffDays <= 3) return { status: 'expiring', color: 'bg-yellow-100 text-yellow-800', text: `${diffDays} days left` };
     return { status: 'active', color: 'bg-green-100 text-green-800', text: `${diffDays} days left` };
   };
@@ -247,41 +246,6 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
 
   return (
     <div className="space-y-6">
-      {/* NEW: Auto-archive notification */}
-      {autoArchiveResult && autoArchiveResult.archivedCount > 0 && (
-        <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 flex items-center space-x-3">
-          <Clock className="w-5 h-5 text-blue-600" />
-          <div>
-            <p className="text-blue-800 font-medium">
-              {autoArchiveResult.archivedCount} member{autoArchiveResult.archivedCount > 1 ? 's' : ''} automatically archived
-            </p>
-            <p className="text-blue-600 text-sm">
-              Memberships expired over 30 days ago have been moved to archive
-            </p>
-            {autoArchiveResult.archivedTrainees.length > 0 && (
-              <p className="text-blue-600 text-xs mt-1">
-                Archived: {autoArchiveResult.archivedTrainees.join(', ')}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* NEW: Warning for trainees near auto-archive */}
-      {traineesNearAutoArchive.length > 0 && currentView === 'active' && (
-        <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 flex items-center space-x-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-600" />
-          <div>
-            <p className="text-yellow-800 font-medium">
-              {traineesNearAutoArchive.length} expired member{traineesNearAutoArchive.length > 1 ? 's' : ''} will be auto-archived soon
-            </p>
-            <p className="text-yellow-700 text-sm">
-              Members with expired memberships are automatically archived after 30 days
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -297,6 +261,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         
         <button
           onClick={() => setShowForm(true)}
+          // Disable Add button in archived view
           className={`flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg transition-all shadow-lg text-sm sm:text-base 
             ${currentView === 'archived' ? 'opacity-50 cursor-not-allowed' : 'hover:from-yellow-600 hover:to-yellow-700'}`}
           disabled={currentView === 'archived'}
@@ -306,8 +271,9 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         </button>
       </div>
 
-      {/* View Toggle and Search */}
+      {/* NEW: View Toggle and Search */}
       <div className="flex flex-col md:flex-row gap-4">
+        {/* View Toggle Buttons */}
         <div className="flex space-x-2 p-1 bg-white/10 rounded-lg border border-white/20 flex-shrink-0">
           <button
             onClick={() => {
@@ -337,6 +303,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
           </button>
         </div>
 
+        {/* Search Input */}
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
           <input
@@ -368,25 +335,14 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredTrainees.map((trainee) => {
+          {filteredTrainees.map((trainee, index) => {
             const expiryStatus = getExpiryStatus(new Date(trainee.membershipEndDate));
-            const daysSinceExpiry = getDaysSinceExpiry(trainee);
-            const willBeAutoArchived = daysSinceExpiry > 0 && daysSinceExpiry <= 30 && currentView === 'active';
             
             return (
               <div
                 key={trainee.id}
-                className={`bg-white/10 backdrop-blur-sm border rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group ${
-                  willBeAutoArchived ? 'border-yellow-400/50' : 'border-white/20'
-                }`}>
-                
-                {/* NEW: Auto-archive warning indicator */}
-                {willBeAutoArchived && (
-                  <div className="mb-3 flex items-center space-x-2 text-yellow-400 text-xs">
-                    <Clock className="w-3 h-3" />
-                    <span>Auto-archive in {30 - daysSinceExpiry} days</span>
-                  </div>
-                )}
+                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group">
+                {/* NEW: Serial Number Badge */}
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4 relative">
@@ -398,6 +354,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                       <Phone className="w-4 h-4" />
                       <span>{trainee.phoneNumber}</span>
                     </div>
+                    {/* NEW: Member ID Display */}
                     <div className="flex items-center space-x-2 text-xs text-green-300 mt-1">
                       <Hash className="w-3 h-3" />
                       <span>{trainee.memberId || trainee.uniqueId}</span>
@@ -415,6 +372,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                     {activeDropdown === trainee.id && (
                       <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[180px]">
                         
+                        {/* NEW: Edit Button */}
                         <button
                           onClick={() => handleEdit(trainee)}
                           className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
@@ -423,6 +381,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                           <span>Edit</span>
                         </button>
                         
+                        {/* Invoice */}
                         <button
                           onClick={() => handleGenerateInvoice(trainee)}
                           className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
@@ -432,6 +391,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                         </button>
                         
                         {currentView === 'active' ? (
+                          // Active View Actions
                           <button
                             onClick={() => handleArchive(trainee.id)}
                             className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
@@ -440,7 +400,9 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                             <span>Archive</span>
                           </button>
                         ) : (
+                          // Archived View Actions
                           <>
+                            {/* NEW: Send Motivational Quote Button - Only for archived trainees */}
                             <button
                               onClick={() => handleSendMotivationalQuote(trainee)}
                               className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-green-600 hover:bg-green-50"
@@ -459,6 +421,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                           </>
                         )}
 
+                        {/* Delete */}
                         <button
                           onClick={() => handleDelete(trainee.id)}
                           className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50"
@@ -503,6 +466,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                     </span>
                   </div>
 
+                  {/* NEW: Display Assigned Trainer if Special Training is enabled */}
                   {trainee.specialTraining && trainee.assignedTrainerId && (
                     <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-green-200 flex items-center space-x-1">
@@ -528,6 +492,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         </div>
       )}
 
+      {/* UPDATED: Pass editingTrainee to TraineeForm */}
       <TraineeForm 
         isOpen={showForm} 
         onClose={handleCloseForm}
