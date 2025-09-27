@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
@@ -12,7 +12,9 @@ import {
   User, // NEW: Added for trainer display
   Hash, // NEW: Added for serial number
   MessageCircle, // NEW: Added for motivational quotes
-  Heart // NEW: Added for motivation icon
+  Heart, // NEW: Added for motivation icon
+  Clock, // NEW: Added for auto-archive indicator
+  AlertTriangle // NEW: Added for warnings
 } from 'lucide-react';
 
 import { useTrainees } from '../hooks/useTrainees';
@@ -40,6 +42,7 @@ export const TraineeList: React.FC = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<TraineeView>('active'); // State for view mode
   const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null); // NEW: State for editing trainee
+  const [autoArchiveCount, setAutoArchiveCount] = useState(0); // NEW: Track auto-archive count
 
   // NEW: Motivational quotes array
   const motivationalQuotes = [
@@ -53,6 +56,64 @@ export const TraineeList: React.FC = () => {
     "🎯 Your goals are still waiting for you! Let's turn your 'I wish' into 'I will' and your 'Someday' into 'Today' at INDOFIT! 🚀"
   ];
 
+  // NEW: Function to check if a trainee should be auto-archived
+  const shouldAutoArchive = (trainee: Trainee): boolean => {
+    const now = new Date();
+    const membershipEndDate = new Date(trainee.membershipEndDate);
+    
+    // Calculate the difference in milliseconds
+    const diffTime = now.getTime() - membershipEndDate.getTime();
+    
+    // Convert to days
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Auto-archive if membership expired more than 30 days ago
+    return diffDays > 30;
+  };
+
+  // NEW: Function to get days since expiry
+  const getDaysSinceExpiry = (trainee: Trainee): number => {
+    const now = new Date();
+    const membershipEndDate = new Date(trainee.membershipEndDate);
+    const diffTime = now.getTime() - membershipEndDate.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // NEW: Function to perform auto-archiving
+  const performAutoArchive = async () => {
+    const expiredTrainees = trainees.filter(shouldAutoArchive);
+    
+    if (expiredTrainees.length > 0) {
+      console.log(`Auto-archiving ${expiredTrainees.length} expired memberships...`);
+      
+      let successCount = 0;
+      
+      // Archive each expired trainee
+      for (const trainee of expiredTrainees) {
+        try {
+          await archiveTrainee(trainee.id);
+          console.log(`Auto-archived: ${trainee.name} (expired on ${new Date(trainee.membershipEndDate).toLocaleDateString()})`);
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to auto-archive ${trainee.name}:`, error);
+        }
+      }
+      
+      if (successCount > 0) {
+        setAutoArchiveCount(successCount);
+        // Show notification for a few seconds
+        setTimeout(() => setAutoArchiveCount(0), 5000);
+      }
+    }
+  };
+
+  // NEW: Auto-archive effect - runs on component mount and when trainees change
+  useEffect(() => {
+    if (trainees.length > 0) {
+      performAutoArchive();
+    }
+  }, [trainees.length]);
+
   // Determine which list to filter based on the current view
   const listToFilter = currentView === 'active' ? trainees : archivedTrainees;
 
@@ -61,6 +122,14 @@ export const TraineeList: React.FC = () => {
     trainee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     trainee.phoneNumber.includes(searchTerm)
   );
+
+  // NEW: Get trainees that will be auto-archived soon (expired but less than 30 days)
+  const getTraineesNearAutoArchive = () => {
+    return trainees.filter(trainee => {
+      const daysSinceExpiry = getDaysSinceExpiry(trainee);
+      return daysSinceExpiry > 0 && daysSinceExpiry <= 30; // Expired but not yet auto-archived
+    });
+  };
 
   // NEW: Helper function to get trainer name by ID
   const getTrainerName = (trainerId: string) => {
@@ -228,7 +297,17 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
     const diffTime = endDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return { status: 'expired', color: 'bg-red-100 text-red-800', text: 'Expired' };
+    if (diffDays < 0) {
+      const daysSinceExpiry = Math.abs(diffDays);
+      // NEW: Show different status based on days since expiry
+      if (daysSinceExpiry > 30) {
+        return { status: 'auto-archived', color: 'bg-gray-100 text-gray-800', text: 'Auto-archived' };
+      } else if (daysSinceExpiry > 7) {
+        return { status: 'long-expired', color: 'bg-red-100 text-red-800', text: `Expired ${daysSinceExpiry} days ago` };
+      } else {
+        return { status: 'expired', color: 'bg-red-100 text-red-800', text: `Expired ${daysSinceExpiry} days ago` };
+      }
+    }
     if (diffDays <= 3) return { status: 'expiring', color: 'bg-yellow-100 text-yellow-800', text: `${diffDays} days left` };
     return { status: 'active', color: 'bg-green-100 text-green-800', text: `${diffDays} days left` };
   };
@@ -244,8 +323,41 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
     );
   }
 
+  // NEW: Get counts for notifications
+  const nearAutoArchiveTrainees = getTraineesNearAutoArchive();
+
   return (
     <div className="space-y-6">
+      {/* NEW: Auto-archive notification */}
+      {autoArchiveCount > 0 && (
+        <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 flex items-center space-x-3">
+          <Clock className="w-5 h-5 text-blue-600" />
+          <div>
+            <p className="text-blue-800 font-medium">
+              {autoArchiveCount} member{autoArchiveCount > 1 ? 's' : ''} automatically archived
+            </p>
+            <p className="text-blue-600 text-sm">
+              Memberships expired over 30 days ago have been moved to archive
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Warning for trainees near auto-archive */}
+      {nearAutoArchiveTrainees.length > 0 && currentView === 'active' && (
+        <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 flex items-center space-x-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-600" />
+          <div>
+            <p className="text-yellow-800 font-medium">
+              {nearAutoArchiveTrainees.length} expired member{nearAutoArchiveTrainees.length > 1 ? 's' : ''} will be auto-archived soon
+            </p>
+            <p className="text-yellow-700 text-sm">
+              Members with expired memberships are automatically archived after 30 days
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -337,12 +449,23 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
         <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredTrainees.map((trainee, index) => {
             const expiryStatus = getExpiryStatus(new Date(trainee.membershipEndDate));
+            const daysSinceExpiry = getDaysSinceExpiry(trainee);
+            const willBeAutoArchived = daysSinceExpiry > 0 && daysSinceExpiry <= 30 && currentView === 'active';
             
             return (
               <div
                 key={trainee.id}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group">
-                {/* NEW: Serial Number Badge */}
+                className={`bg-white/10 backdrop-blur-sm border rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group ${
+                  willBeAutoArchived ? 'border-yellow-400/50' : 'border-white/20'
+                }`}>
+                
+                {/* NEW: Auto-archive warning indicator */}
+                {willBeAutoArchived && (
+                  <div className="mb-3 flex items-center space-x-2 text-yellow-400 text-xs">
+                    <Clock className="w-3 h-3" />
+                    <span>Auto-archive in {30 - daysSinceExpiry} days</span>
+                  </div>
+                )}
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4 relative">
