@@ -283,11 +283,6 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                 className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group"
               >
                 {/* NEW: Serial Number Badge */}
-                <div className="absolute -top-2 -left-2">
-                  <div className="bg-yellow-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold shadow-lg">
-                    #{1 + 1}
-                  </div>
-                </div>
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4 relative">
