@@ -8,10 +8,13 @@ import {
   MoreVertical, 
   FileText, 
   RotateCcw, // Used for Unarchive
-  Edit // NEW: Added Edit icon
+  Edit, // NEW: Added Edit icon
+  User, // NEW: Added for trainer display
+  Hash // NEW: Added for serial number
 } from 'lucide-react';
 
 import { useTrainees } from '../hooks/useTrainees';
+import { useTrainers } from '../hooks/useTrainers'; // NEW: Import trainers hook
 import { TraineeForm } from './TraineeForm';
 import { Trainee } from '../types'; // NEW: Import Trainee type
 
@@ -28,6 +31,8 @@ export const TraineeList: React.FC = () => {
     deleteTrainee 
   } = useTrainees();
 
+  const { trainers } = useTrainers(); // NEW: Get trainers data
+
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -42,6 +47,12 @@ export const TraineeList: React.FC = () => {
     trainee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     trainee.phoneNumber.includes(searchTerm)
   );
+
+  // NEW: Helper function to get trainer name by ID
+  const getTrainerName = (trainerId: string) => {
+    const trainer = trainers.find(t => t.id === trainerId);
+    return trainer ? trainer.name : 'Unknown Trainer';
+  };
 
   const handleArchive = async (traineeId: string) => {
     try {
@@ -100,7 +111,7 @@ export const TraineeList: React.FC = () => {
 ━━━━━━━━━━━━━━━━━━━━━━━
 
 🎉 *Welcome on board to INDOFIT!*  
-Your transformation journey starts here, and we’ll be with you at every step 💪🔥
+Your transformation journey starts here, and we'll be with you at every step 💪🔥
 
 📋 *Invoice Details:*
 • Invoice No: ${invoiceNo}
@@ -127,7 +138,7 @@ Your transformation journey starts here, and we’ll be with you at every step �
 ✅ *Payment Status: PAID*
 
 Thank you for choosing *INDOFIT GYM*! 🙏  
-Together, let’s achieve your fitness goals and push past limits! 🚀💯
+Together, let's achieve your fitness goals and push past limits! 🚀💯
 
 *Contact us:* [Your gym contact details]`;
 
@@ -263,7 +274,7 @@ Together, let’s achieve your fitness goals and push past limits! 🚀💯
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredTrainees.map((trainee) => {
+          {filteredTrainees.map((trainee, index) => {
             const expiryStatus = getExpiryStatus(new Date(trainee.membershipEndDate));
             
             return (
@@ -271,8 +282,15 @@ Together, let’s achieve your fitness goals and push past limits! 🚀💯
                 key={trainee.id}
                 className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all duration-300 group"
               >
+                {/* NEW: Serial Number Badge */}
+                <div className="absolute -top-2 -left-2">
+                  <div className="bg-yellow-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold shadow-lg">
+                    #{index + 1}
+                  </div>
+                </div>
+
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-4 relative">
                   <div className="flex-1">
                     <h3 className="text-base sm:text-lg font-semibold text-ivory-100 group-hover:text-yellow-400 transition-colors">
                       {trainee.name}
@@ -280,6 +298,11 @@ Together, let’s achieve your fitness goals and push past limits! 🚀💯
                     <div className="flex items-center space-x-2 text-sm text-green-200 mt-1">
                       <Phone className="w-4 h-4" />
                       <span>{trainee.phoneNumber}</span>
+                    </div>
+                    {/* NEW: Member ID Display */}
+                    <div className="flex items-center space-x-2 text-xs text-green-300 mt-1">
+                      <Hash className="w-3 h-3" />
+                      <span>{trainee.memberId || trainee.uniqueId}</span>
                     </div>
                   </div>
                   
@@ -376,6 +399,19 @@ Together, let’s achieve your fitness goals and push past limits! 🚀💯
                       {trainee.specialTraining ? 'Yes' : 'No'}
                     </span>
                   </div>
+
+                  {/* NEW: Display Assigned Trainer if Special Training is enabled */}
+                  {trainee.specialTraining && trainee.assignedTrainerId && (
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="text-green-200 flex items-center space-x-1">
+                        <User className="w-3 h-3" />
+                        <span>Trainer:</span>
+                      </span>
+                      <span className="text-yellow-400 font-medium">
+                        {getTrainerName(trainee.assignedTrainerId)}
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-green-200">Expires:</span>
