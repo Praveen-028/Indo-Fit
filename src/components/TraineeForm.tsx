@@ -311,6 +311,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
                   <option value="Strength">Strength</option>
                   <option value="Conditioning">Conditioning</option>
                   <option value="Fitness">Fitness</option>
+                  <option value="Rehabilitation">rehabilitation</option>
                 </select>
               </div>
 
