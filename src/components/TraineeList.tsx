@@ -19,7 +19,6 @@ import {
 import { useTrainees } from '../hooks/useTrainees';
 import { useTrainers } from '../hooks/useTrainers';
 import { TraineeForm } from './TraineeForm';
-import { InvoiceDialog } from './InvoiceDialog'; // Import the new InvoiceDialog
 import { Trainee } from '../types';
 
 type TraineeView = 'active' | 'archived';
@@ -37,8 +36,6 @@ export const TraineeList: React.FC = () => {
   const { trainers } = useTrainers();
 
   const [showForm, setShowForm] = useState(false);
-  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false); // New state for invoice dialog
-  const [selectedTraineeForInvoice, setSelectedTraineeForInvoice] = useState<Trainee | null>(null); // Selected trainee for invoice
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<TraineeView>('active');
@@ -208,16 +205,64 @@ Contact us : 6383328828`;
     }
   };
 
-  // Updated invoice generation handler - now opens dialog instead of directly generating
-  const handleOpenInvoiceDialog = (trainee: Trainee) => {
-    setSelectedTraineeForInvoice(trainee);
-    setShowInvoiceDialog(true);
-    setActiveDropdown(null);
-  };
+  const handleGenerateInvoice = async (trainee: Trainee) => {
+    setOperationLoading(`invoice-${trainee.id}`);
+    try {
+      const invoiceNo = `INV-${trainee.uniqueId}-${Date.now().toString().slice(-6)}`;
+      
+      // Use the trainee's invoice date if available, otherwise use current date
+      const invoiceDate = trainee.invoiceDate ? new Date(trainee.invoiceDate) : new Date();
+      
+      const message = `🧾 *INVOICE - INDOFIT Fitness Studio & Gym*
+*Physique LAB7.0*
 
-  const handleCloseInvoiceDialog = () => {
-    setShowInvoiceDialog(false);
-    setSelectedTraineeForInvoice(null);
+━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 *Welcome on board to INDOFIT!*  
+Your transformation journey starts here, and we'll be with you at every step 💪🔥
+
+📋 *Invoice Details:*
+• Invoice No: ${invoiceNo}
+• Date: ${invoiceDate.toLocaleDateString()}
+
+👤 *Member Information:*
+• Name: ${trainee.name}
+• Member ID: ${trainee.uniqueId}
+• Phone: ${trainee.phoneNumber}
+
+💪 *Membership Details:*
+• Admission Date: ${new Date(trainee.membershipStartDate).toLocaleDateString()}
+• Duration: ${trainee.membershipDuration} month(s)
+• Expires: ${new Date(trainee.membershipEndDate).toLocaleDateString()}
+• Goal: ${trainee.goalCategory}
+• Special Training: ${trainee.specialTraining ? 'Yes' : 'No'}
+• Payment Type: ${trainee.paymentType}
+
+💰 *Amount Details:*
+• Total Amount: *₹${trainee.admissionFee}*
+
+━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ *Payment Status: PAID*
+
+Thank you for choosing *INDOFIT GYM*! 🙏  
+Together, let's achieve your fitness goals and push past limits! 🚀💯
+
+📍 Location: Behind Zudio
+
+*Contact us:* 6383328828`;
+
+      const whatsappNumber = formatPhoneForWhatsApp(trainee.phoneNumber);
+      const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      
+      window.open(whatsappURL, '_blank');
+      setActiveDropdown(null);
+      
+    } catch (error) {
+      handleOperationError('generate invoice', error);
+    } finally {
+      setOperationLoading(null);
+    }
   };
 
   const getExpiryStatus = (endDate: Date) => {
@@ -389,11 +434,12 @@ Contact us : 6383328828`;
                         </button>
                         
                         <button
-                          onClick={() => handleOpenInvoiceDialog(trainee)} // Updated to use dialog
-                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handleGenerateInvoice(trainee)}
+                          disabled={operationLoading === `invoice-${trainee.id}`}
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                         >
                           <FileText className="w-4 h-4" />
-                          <span>Invoice</span>
+                          <span>{operationLoading === `invoice-${trainee.id}` ? 'Generating...' : 'Invoice'}</span>
                         </button>
                         
                         {currentView === 'active' ? (
@@ -501,13 +547,6 @@ Contact us : 6383328828`;
         isOpen={showForm} 
         onClose={handleCloseForm}
         editingTrainee={editingTrainee} 
-      />
-
-      {/* Add Invoice Dialog */}
-      <InvoiceDialog
-        isOpen={showInvoiceDialog}
-        onClose={handleCloseInvoiceDialog}
-        trainee={selectedTraineeForInvoice}
       />
     </div>
   );
