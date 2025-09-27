@@ -252,6 +252,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
                   <option value="Weight Gain">Weight Gain</option>
                   <option value="Strength">Strength</option>
                   <option value="Conditioning">Conditioning</option>
+                  <option value="Fitness">Fitness</option>
                 </select>
               </div>
 
@@ -263,7 +264,7 @@ export const TraineeForm: React.FC<TraineeFormProps> = ({
                   onChange={(e) => setFormData({ ...formData, admissionFee: Number(e.target.value) })}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
                   placeholder="Enter admission fee"
-                  min="0"
+                  min="0"Strength
                 />
               </div>
 
