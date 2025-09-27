@@ -34,7 +34,8 @@ On ${enquiryDate.trim()}, you had enquired with us about starting your fitness j
 ✅ Certified & Experienced Trainers
 
 📍 Location: Behind Zudio
-📞 Feel free to call me or visit anytime to know more or to kickstart your transformation journey!
+📞 Contact us: 6383328828
+ Feel free to call me or visit anytime to know more or to kickstart your transformation journey!
 
 🙏 Thank you for your interest.
 Let’s achieve your fitness goals together with INDO FIT Fitness Studio 💯🔥
