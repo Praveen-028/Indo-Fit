@@ -139,7 +139,7 @@ Reply to this message or call us to discuss your comeback plan!
 Let's make your fitness goals a reality! 💪
 
 *Team INDOFIT Fitness Studio and Gym - Physique LAB7.0*
-[Your gym contact details]`;
+📍 Location: Behind Zudio`;
 
       // Create WhatsApp URL with the message
       const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
