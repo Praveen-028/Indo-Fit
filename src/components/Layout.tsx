@@ -33,7 +33,7 @@ const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children }) => 
               </div>
               <div>
                 <h1 className="text-xl font-bold text-ivory-100">INDO FIT Fitness Studio & Gym</h1>
-                <p className="text-sm text-green-200">Physique LAB7.0</p>
+                <p className="text-sm text-green-200">Team of Physique LAB7.0</p>
               </div>
             </div>
           </div>
