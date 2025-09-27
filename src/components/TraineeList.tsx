@@ -10,7 +10,9 @@ import {
   RotateCcw, // Used for Unarchive
   Edit, // NEW: Added Edit icon
   User, // NEW: Added for trainer display
-  Hash // NEW: Added for serial number
+  Hash, // NEW: Added for serial number
+  MessageCircle, // NEW: Added for motivational quotes
+  Heart // NEW: Added for motivation icon
 } from 'lucide-react';
 
 import { useTrainees } from '../hooks/useTrainees';
@@ -38,6 +40,18 @@ export const TraineeList: React.FC = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<TraineeView>('active'); // State for view mode
   const [editingTrainee, setEditingTrainee] = useState<Trainee | null>(null); // NEW: State for editing trainee
+
+  // NEW: Motivational quotes array
+  const motivationalQuotes = [
+    "💪 Your fitness journey is waiting for you! Every day is a new chance to become stronger. Come back to INDOFIT and let's continue your transformation! 🔥",
+    "🌟 Champions are made when nobody's watching. Your gym family at INDOFIT misses you! Ready to get back to your goals? 💯",
+    "🚀 The best project you'll ever work on is YOU! We're here to support your comeback journey at INDOFIT. Let's do this together! 💪",
+    "⚡ Your body can do it. It's time to convince your mind! INDOFIT is ready to welcome you back to achieve your fitness dreams! 🏆",
+    "🔥 Success isn't given. It's earned in the gym, in the grind, in every rep! Miss training with us? Let's restart your fitness story at INDOFIT! 💪",
+    "🌈 Every workout is a step towards a better you! Your INDOFIT family is waiting to celebrate your return. Ready to make it happen? 🎯",
+    "💎 Diamonds are formed under pressure, and champions are forged in the gym! Come back to INDOFIT and shine bright! ✨",
+    "🎯 Your goals are still waiting for you! Let's turn your 'I wish' into 'I will' and your 'Someday' into 'Today' at INDOFIT! 🚀"
+  ];
 
   // Determine which list to filter based on the current view
   const listToFilter = currentView === 'active' ? trainees : archivedTrainees;
@@ -97,6 +111,53 @@ export const TraineeList: React.FC = () => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingTrainee(null);
+  };
+
+  // NEW: Handler for sending motivational quote
+  const handleSendMotivationalQuote = async (trainee: Trainee) => {
+    try {
+      // Get a random motivational quote
+      const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+      
+      // Create personalized motivational message
+      const message = `Hi ${trainee.name}! 👋
+
+${randomQuote}
+
+🏋️‍♂️ *Why come back to INDOFIT?*
+✅ State-of-the-art equipment
+✅ Expert trainers & personalized guidance  
+✅ Supportive community that cheers you on
+✅ Flexible membership plans
+✅ Your previous progress is still here!
+
+💬 *Ready to restart your fitness journey?*
+Reply to this message or call us to discuss your comeback plan!
+
+🎯 Remember: *"The best time to plant a tree was 20 years ago. The second best time is NOW!"*
+
+Let's make your fitness goals a reality! 💪
+
+*Team INDOFIT - Physique LAB7.0*
+[Your gym contact details]`;
+
+      // Create WhatsApp URL with the message
+      const phoneNumber = trainee.phoneNumber.replace(/[^\d]/g, ''); // Remove non-digits
+      const whatsappNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
+      const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      
+      // Open WhatsApp in a new tab
+      window.open(whatsappURL, '_blank');
+      
+      setActiveDropdown(null);
+      
+      // Show success message
+      alert(`Motivational message ready! WhatsApp will open to send encouragement to ${trainee.name} 💪`);
+      
+    } catch (error) {
+      console.error('Error sending motivational quote:', error);
+      alert('Error preparing motivational message. Please try again.');
+    }
   };
 
   const handleGenerateInvoice = async (trainee: any) => {
@@ -309,7 +370,7 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                     </button>
                     
                     {activeDropdown === trainee.id && (
-                      <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[160px]">
+                      <div className="absolute right-0 top-10 bg-white rounded-lg shadow-lg py-2 z-10 min-w-[180px]">
                         
                         {/* NEW: Edit Button */}
                         <button
@@ -340,13 +401,24 @@ Together, let's achieve your fitness goals and push past limits! 🚀💯
                           </button>
                         ) : (
                           // Archived View Actions
-                          <button
-                            onClick={() => handleUnarchive(trainee.id)}
-                            className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                            <span>Unarchive</span>
-                          </button>
+                          <>
+                            {/* NEW: Send Motivational Quote Button - Only for archived trainees */}
+                            <button
+                              onClick={() => handleSendMotivationalQuote(trainee)}
+                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-green-600 hover:bg-green-50"
+                            >
+                              <Heart className="w-4 h-4" />
+                              <span>Send Motivation</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleUnarchive(trainee.id)}
+                              className="flex items-center space-x-2 w-full px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                              <span>Unarchive</span>
+                            </button>
+                          </>
                         )}
 
                         {/* Delete */}
