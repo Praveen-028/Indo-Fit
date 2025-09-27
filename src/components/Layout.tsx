@@ -41,7 +41,7 @@ const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children }) => 
               </div>
               <div className="min-w-0 flex-1">
                 <h1 className="text-sm sm:text-xl font-bold text-white truncate">INDO FIT Fitness Studio & Gym</h1>
-                <p className="text-xs sm:text-sm text-green-200 hidden sm:block">Team of Physique LAB7.0</p>
+                <p className="text-xs sm:text-sm text-green-200">Team of Physique LAB7.0</p>
               </div>
             </div>
             
