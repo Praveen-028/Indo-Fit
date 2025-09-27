@@ -43,6 +43,67 @@ export const useTrainees = () => {
     }
   };
 
+  // NEW: Function to check and auto-archive expired memberships
+  const checkAndArchiveExpiredMemberships = async () => {
+    try {
+      const now = new Date();
+      const batch = writeBatch(db);
+      let hasUpdates = false;
+
+      // Find active trainees with expired memberships (more than 1 month past expiry)
+      const expiredTrainees = allTrainees.filter(trainee => {
+        if (trainee.isActive === false) return false; // Skip already archived
+        
+        const membershipEndDate = new Date(trainee.membershipEndDate);
+        const oneMonthAfterExpiry = new Date(membershipEndDate);
+        oneMonthAfterExpiry.setMonth(oneMonthAfterExpiry.getMonth() + 1);
+        
+        return now > oneMonthAfterExpiry;
+      });
+
+      console.log(`Found ${expiredTrainees.length} memberships expired for more than 1 month`);
+
+      for (const trainee of expiredTrainees) {
+        const traineeRef = doc(db, 'trainees', trainee.id);
+        
+        // Archive the trainee
+        batch.update(traineeRef, { 
+          isActive: false,
+          autoArchivedAt: new Date(),
+          autoArchivedReason: 'Membership expired for more than 1 month'
+        });
+        
+        // Archive related plans
+        await getRelatedPlansQuery(trainee.id, batch, 'archive');
+        hasUpdates = true;
+
+        console.log(`Auto-archiving trainee: ${trainee.name} (ID: ${trainee.id})`);
+      }
+
+      // Commit batch if there are updates
+      if (hasUpdates) {
+        await batch.commit();
+        console.log(`Auto-archived ${expiredTrainees.length} expired memberships`);
+      }
+
+    } catch (error) {
+      console.error('Error auto-archiving expired memberships:', error);
+    }
+  };
+
+  // NEW: Function to run periodic checks
+  const startPeriodicExpiryCheck = () => {
+    // Run immediately when hook initializes
+    checkAndArchiveExpiredMemberships();
+
+    // Set up interval to run every 24 hours (86400000 ms)
+    const intervalId = setInterval(() => {
+      checkAndArchiveExpiredMemberships();
+    }, 24 * 60 * 60 * 1000); // 24 hours
+
+    return intervalId;
+  };
+
   useEffect(() => {
     // Fetches ALL trainees (active and archived)
     const q = collection(db, 'trainees'); 
@@ -54,6 +115,7 @@ export const useTrainees = () => {
         membershipStartDate: doc.data().membershipStartDate?.toDate(),
         membershipEndDate: doc.data().membershipEndDate?.toDate(),
         createdAt: doc.data().createdAt?.toDate(),
+        autoArchivedAt: doc.data().autoArchivedAt?.toDate(), // NEW: Handle auto-archive timestamp
       })) as Trainee[];
       
       setAllTrainees(traineesData); 
@@ -62,11 +124,20 @@ export const useTrainees = () => {
 
     return () => unsubscribe();
   }, []);
+
+  // NEW: Start periodic expiry check when trainees data is loaded
+  useEffect(() => {
+    if (!loading && allTrainees.length > 0) {
+      const intervalId = startPeriodicExpiryCheck();
+      
+      // Cleanup interval on unmount
+      return () => clearInterval(intervalId);
+    }
+  }, [loading, allTrainees.length]);
   
   // Derived state: Filter active and archived members
   const activeTrainees = allTrainees.filter(t => t.isActive !== false); 
   const archivedTrainees = allTrainees.filter(t => t.isActive === false);
-
 
   const addTrainee = async (traineeData: Omit<Trainee, 'id'>) => {
     try {
@@ -95,8 +166,11 @@ export const useTrainees = () => {
     const traineeRef = doc(db, 'trainees', traineeId);
     
     try {
-      // 1. Archive the Trainee document
-      batch.update(traineeRef, { isActive: false });
+      // 1. Archive the Trainee document (manual archive)
+      batch.update(traineeRef, { 
+        isActive: false,
+        manualArchivedAt: new Date() // Mark as manually archived
+      });
       
       // 2. Archive related Plans and add to the same batch
       await getRelatedPlansQuery(traineeId, batch, 'archive');
@@ -119,7 +193,14 @@ export const useTrainees = () => {
 
     try {
       // 1. Unarchive the Trainee document
-      batch.update(traineeRef, { isActive: true });
+      batch.update(traineeRef, { 
+        isActive: true,
+        unarchivedAt: new Date(),
+        // Clear archive timestamps when unarchiving
+        autoArchivedAt: null,
+        autoArchivedReason: null,
+        manualArchivedAt: null
+      });
       
       // 2. Unarchive related Plans and add to the same batch
       await getRelatedPlansQuery(traineeId, batch, 'unarchive');
@@ -162,6 +243,11 @@ export const useTrainees = () => {
     }
   };
 
+  // NEW: Manual function to trigger expiry check (useful for testing or manual triggers)
+  const manualExpiryCheck = async () => {
+    await checkAndArchiveExpiredMemberships();
+  };
+
   return {
     trainees: activeTrainees, // Active list for main view
     archivedTrainees,          // Archived list for archived view
@@ -171,5 +257,6 @@ export const useTrainees = () => {
     archiveTrainee,
     unarchiveTrainee,          // Exposed unarchive function
     deleteTrainee,
+    manualExpiryCheck,        // NEW: Expose manual expiry check function
   };
 };
