@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowRight, ArrowLeft, UserPlus } from 'lucide-react';
+import { X, UserPlus } from 'lucide-react';
 import { useTrainers } from '../hooks/useTrainers';
 import { Trainer } from '../types';
 
@@ -14,12 +14,10 @@ export const TrainerForm: React.FC<TrainerFormProps> = ({
   onClose,
   editingTrainer
 }) => {
-  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
     email: '',
-    specialization: 'Personal Training' as const,
     experience: 0,
     salary: 0,
   });
@@ -33,21 +31,17 @@ export const TrainerForm: React.FC<TrainerFormProps> = ({
         name: editingTrainer.name,
         phoneNumber: editingTrainer.phoneNumber,
         email: editingTrainer.email || '',
-        specialization: editingTrainer.specialization,
         experience: editingTrainer.experience,
         salary: editingTrainer.salary,
       });
-      setStep(1);
     } else if (isOpen && !editingTrainer) {
       setFormData({
         name: '',
         phoneNumber: '',
         email: '',
-        specialization: 'Personal Training',
         experience: 0,
         salary: 0,
       });
-      setStep(1);
     }
     setError('');
   }, [editingTrainer, isOpen]);
@@ -98,7 +92,6 @@ export const TrainerForm: React.FC<TrainerFormProps> = ({
           name: formData.name,
           phoneNumber: formData.phoneNumber,
           email: formData.email,
-          specialization: formData.specialization,
           experience: formData.experience,
           salary: formData.salary,
         };
@@ -112,7 +105,6 @@ export const TrainerForm: React.FC<TrainerFormProps> = ({
           name: formData.name,
           phoneNumber: formData.phoneNumber,
           email: formData.email,
-          specialization: formData.specialization,
           experience: formData.experience,
           salary: formData.salary,
           joiningDate,
@@ -155,137 +147,124 @@ export const TrainerForm: React.FC<TrainerFormProps> = ({
           </button>
         </div>
 
-        {/* Progress Bar */}
-        <div className="px-4 sm:px-6 py-3 bg-green-50 border-b">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-green-700">Step {step} of 2</span>
-            <span className="text-sm text-green-600">{step === 1 ? 'Basic Info' : 'Professional Details'}</span>
-          </div>
-          <div className="w-full bg-green-200 rounded-full h-2">
-            <div
-              className="bg-gradient-to-r from-green-600 to-green-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(step / 2) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-6 max-h-[60vh] overflow-y-auto">
-          {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
-
-          {step === 1 ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
-                  placeholder="Enter trainer name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                <input
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
-                  placeholder="Enter phone number"
-                  disabled={editingTrainer ? true : false}
-                />
-                {editingTrainer && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Phone number cannot be changed when editing
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email (Optional)</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
-                  placeholder="Enter email address"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
-                <select
-                  value={formData.specialization}
-                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value as any })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
-                >
-                  <option value="Personal Training">Personal Training</option>
-                  <option value="Group Classes">Group Classes</option>
-                  <option value="Nutrition">Nutrition</option>
-                  <option value="Physiotherapy">Physiotherapy</option>
-                  <option value="General">General</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Experience (Years)</label>
-                <input
-                  type="number"
-                  value={formData.experience}
-                  onChange={(e) => setFormData({ ...formData, experience: Number(e.target.value) })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
-                  placeholder="Years of experience"
-                  min="0"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Salary (₹)</label>
-                <input
-                  type="number"
-                  value={formData.salary}
-                  onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
-                  placeholder="Enter monthly salary"
-                  min="0"
-                />
-              </div>
+        <div className="p-4 sm:p-6 max-h-[75vh] overflow-y-auto">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center justify-between mt-6 sm:mt-8">
-            {step === 2 && (
-              <button
-                onClick={() => setStep(1)}
-                className="flex items-center space-x-2 px-3 sm:px-4 py-2 text-green-700 hover:bg-green-100 rounded-lg transition-colors text-sm sm:text-base"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
-              </button>
-            )}
+          <div className="space-y-4">
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                placeholder="Enter trainer name"
+                required
+              />
+            </div>
 
-            {step === 1 ? (
-              <button
-                onClick={() => setStep(2)}
-                disabled={!formData.name || !formData.phoneNumber || !validatePhoneNumber(formData.phoneNumber)}
-                className="ml-auto flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm sm:text-base"
-              >
-                <span>Next</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="ml-auto px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 disabled:opacity-50 transition-all text-sm sm:text-base"
-              >
-                {loading ? (editingTrainer ? 'Updating...' : 'Adding...') : (editingTrainer ? 'Update Trainer' : 'Add Trainer')}
-              </button>
-            )}
+            {/* Phone Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                placeholder="Enter 10-digit phone number"
+                disabled={editingTrainer ? true : false}
+                required
+              />
+              {editingTrainer && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Phone number cannot be changed when editing
+                </p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email (Optional)
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                placeholder="Enter email address"
+              />
+            </div>
+
+            {/* Experience */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Experience (Years) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={formData.experience}
+                onChange={(e) => setFormData({ ...formData, experience: Number(e.target.value) })}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                placeholder="Years of experience"
+                min="0"
+                max="50"
+                required
+              />
+            </div>
+
+            {/* Salary */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Monthly Salary (₹) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={formData.salary}
+                onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-0 transition-colors text-sm sm:text-base"
+                placeholder="Enter monthly salary"
+                min="0"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="mt-6 sm:mt-8">
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !formData.name || !formData.phoneNumber || !validatePhoneNumber(formData.phoneNumber) || formData.experience < 0 || formData.salary <= 0}
+              className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm sm:text-base font-medium"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {editingTrainer ? 'Updating...' : 'Adding...'}
+                </span>
+              ) : (
+                editingTrainer ? 'Update Trainer' : 'Add Trainer'
+              )}
+            </button>
+          </div>
+
+          {/* Form Info */}
+          <div className="mt-4 p-3 bg-green-50 rounded-lg">
+            <p className="text-xs text-green-700">
+              <span className="text-red-500">*</span> Required fields. Trainer ID will be auto-generated based on phone number.
+            </p>
           </div>
         </div>
       </div>
