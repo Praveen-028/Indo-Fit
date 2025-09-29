@@ -1,5 +1,4 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
 
@@ -14,15 +13,5 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const analytics = getAnalytics(app);
-
-// Sign in anonymously when app loads
-signInAnonymously(auth)
-  .then(() => {
-    console.log('Firebase: Authenticated anonymously - write access enabled');
-  })
-  .catch((error) => {
-    console.error('Firebase Auth error:', error);
-  });
