@@ -164,7 +164,8 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
       if (trainee) {
         setSelectedTraineeId(editingPlan.traineeId);
         setNumberOfDays(editingPlan.days.length);
-        setWorkoutDays(editingPlan.days);
+        // Deep clone the days to avoid reference issues
+        setWorkoutDays(JSON.parse(JSON.stringify(editingPlan.days)));
         setSearchTerm(trainee.name);
         setStep(3); // Go directly to exercise editing
       }
@@ -244,7 +245,7 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
         ? {
             ...day,
             exercises: [...day.exercises, {
-              id: `exercise-${Date.now()}-${day.exercises.length}`,
+              id: `exercise-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               ...DEFAULT_NEW_EXERCISE,
             }]
           }
@@ -503,6 +504,7 @@ export const WorkoutPlanForm: React.FC<WorkoutPlanFormProps> = ({ isOpen, onClos
                     <button
                       onClick={() => addExercise(day.id)}
                       className="flex items-center space-x-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex-shrink-0 w-full sm:w-auto justify-center sm:justify-start"
+                      type="button"
                     >
                       <Plus className="w-4 h-4" />
                       <span className="text-sm">Add Exercise</span>

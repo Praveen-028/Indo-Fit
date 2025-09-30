@@ -132,6 +132,7 @@ const MealEditor: React.FC<MealEditorProps> = React.memo(({ day, meal, mealTypes
           <button
             onClick={() => addFoodItem(day.id, meal.id)}
             className="text-sm text-blue-600 hover:text-blue-700 flex items-center space-x-1 transition-colors"
+            type="button"
             aria-label="Add new food item"
           >
             <Plus className="w-3 h-3" />
@@ -229,7 +230,8 @@ export const DietPlanForm: React.FC<DietPlanFormProps> = ({ isOpen, onClose, edi
     if (isOpen && editingPlan && !loadingTrainees) {
       setSelectedTraineeId(editingPlan.traineeId);
       setNumberOfDays(editingPlan.days.length);
-      setDietDays(editingPlan.days);
+      // Deep clone the days to avoid reference issues
+      setDietDays(JSON.parse(JSON.stringify(editingPlan.days)));
       setStep(3); // Go directly to meal editing
       
       const trainee = trainees.find(t => t.id === editingPlan.traineeId);
@@ -303,7 +305,7 @@ export const DietPlanForm: React.FC<DietPlanFormProps> = ({ isOpen, onClose, edi
         ? {
             ...day,
             meals: [...day.meals, {
-              id: `meal-${Date.now() + Math.random()}`, // More robust ID
+              id: `meal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // More robust ID
               type: 'Breakfast',
               name: '',
               foodItems: [],
@@ -350,7 +352,7 @@ export const DietPlanForm: React.FC<DietPlanFormProps> = ({ isOpen, onClose, edi
                 ? {
                     ...meal,
                     foodItems: [...meal.foodItems, {
-                      id: `food-${Date.now() + Math.random()}`, // More robust ID
+                      id: `food-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // More robust ID
                       name: '',
                       quantity: '',
                     }]
@@ -619,7 +621,8 @@ export const DietPlanForm: React.FC<DietPlanFormProps> = ({ isOpen, onClose, edi
                     />
                     <button
                       onClick={() => addMeal(day.id)}
-                      className="flex items-center space-x-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-semibold flex-shrink-0 mt-2 sm:mt-0"
+                      className="flex items-center space-x-1 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex-shrink-0 w-full sm:w-auto justify-center sm:justify-start"
+                      type="button"
                       aria-label={`Add meal to Day ${day.dayNumber}`}
                     >
                       <Plus className="w-4 h-4" />
