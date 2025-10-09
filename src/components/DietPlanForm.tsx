@@ -3,6 +3,7 @@ import { X, Plus, Trash2, Save, Search, ChevronDown, ChevronLeft } from 'lucide-
 import { useTrainees } from '../hooks/useTrainees';
 import { collection, addDoc, updateDoc, doc, query, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { FIXED_USER_UID } from '../lib/firebase';
 import { DietPlan, DietDay, Meal, FoodItem } from '../types';
 
 // Define types for clarity, though they are imported

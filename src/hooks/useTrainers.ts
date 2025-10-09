@@ -12,6 +12,7 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { FIXED_USER_UID } from '../lib/firebase';
 import { Trainer } from '../types';
 
 export const useTrainers = () => {

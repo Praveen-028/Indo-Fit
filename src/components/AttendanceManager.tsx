@@ -3,6 +3,7 @@ import { Calendar, Users, Check, X, ChevronLeft, ChevronRight, Search, Download,
 import { useTrainees } from '../hooks/useTrainees';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { FIXED_USER_UID } from '../lib/firebase';
 import { AttendanceRecord } from '../types';
 import { format, startOfDay, endOfDay, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths, subMonths, addYears, subYears, getDaysInMonth, getDay } from 'date-fns';
 import { isToday, isPastDate, isFutureDate } from '../utils/traineeUtils';
